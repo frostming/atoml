@@ -1,0 +1,17 @@
+"name" = [
+    [1e3, 2.54],
+    [2e3, 4.13],
+    '''\
+    a\tbc\
+    def
+    '''
+]
+
+"age" = """123"""
+
+property = { "name" = "China", "continent" = """
+Asia""", china.population = 1.2e9 }
+
+[[people]]
+
+name = "Tom"
