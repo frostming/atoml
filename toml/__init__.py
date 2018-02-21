@@ -7,6 +7,7 @@
     :email: mianghong@gmail.com
     :license: BSD-2
 """
+# flake8: noqa
 from .decoder import loads, load
 
 __author__ = 'Frost Ming'

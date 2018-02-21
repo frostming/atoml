@@ -9,11 +9,13 @@
 """
 __all__ = ('Converter', 'Decoder', 'loads', 'load')
 
+import datetime
 import re
 import sys
 import shlex
 
 from toml.errors import TomlDecodeError
+from toml.tz import TomlTZ
 
 if sys.version_info[0] == 3:
     unichr = chr
@@ -66,6 +68,10 @@ class Converter:
     patterns = [
         ('blank', BLANK_RE),
         ('boolean', re.compile(r'(true|false)')),
+        ('datetime', re.compile(r'(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})'
+                                r'(\.\d{6})?(Z|[+-]\d{2}:\d{2})?')),
+        ('date', re.compile(r'(\d{4}-\d{2}-\d{2})')),
+        ('time', re.compile(r'(\d{2}:\d{2}:\d{2})(\.\d{6})?')),
         ('integer', re.compile(r'([+-]?%s(?=[^eE\.])'
                                r'|0x[a-fA-F0-9]+'
                                r'|0o[0-7]+'
@@ -129,7 +135,7 @@ class Converter:
                                   'Parsing error: %r' % self.line)
         if is_end and not BLANK_RE.match(self.line):
             raise TomlDecodeError(self.parser.lineno,
-                                  'Parsing error: %r' % self.line)
+                                  'Something is remained: %r' % self.line)
         return token
 
     def convert_blank(self, match):
@@ -163,6 +169,28 @@ class Converter:
     def convert_float(self, match):
         self.line = self.line[match.end():]
         return float(match.group(1).replace('_', ''))
+
+    def convert_datetime(self, match):
+        self.line = self.line[match.end():]
+        date_string = match.group(1).replace('T', ' ')
+        dt = datetime.datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+        if match.group(2):
+            dt = dt.replace(microsecond=int(match.group(2)[1:]))
+        if match.group(3):
+            dt = dt.replace(tzinfo=TomlTZ(match.group(3)))
+        return dt
+
+    def convert_date(self, match):
+        self.line = self.line[match.end():]
+        dt = datetime.datetime.strptime(match.group(1), '%Y-%m-%d')
+        return dt.date()
+
+    def convert_time(self, match):
+        self.line = self.line[match.end():]
+        dt = datetime.datetime.strptime(match.group(1), '%H:%M:%S')
+        if match.group(2):
+            dt = dt.replace(microsecond=int(match.group(2)[1:]))
+        return dt.time()
 
     def convert_multi_string(self, match):
         self.line = self.line[match.end():]
@@ -225,6 +253,7 @@ class Converter:
     def convert_list_begin(self, match):
         self.line = self.line[match.end():]
         temp = []
+        ele_type = None
         while True:
             if self.list_end_re.match(self.line):
                 self.line = self.line[self.list_end_re.match(self.line).end():]
@@ -236,6 +265,14 @@ class Converter:
             if token is None:
                 self.line = self.parser._readline().lstrip()
             else:
+                if ele_type is None:
+                    ele_type = type(token)
+                else:
+                    if ele_type != type(token):
+                        raise TomlDecodeError(
+                            self.parser.lineno,
+                            'Element type %r is different from others(%r)'
+                            % (type(token), ele_type))
                 temp.append(token)
         return temp
 
