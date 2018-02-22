@@ -1,9 +1,11 @@
 import os
 import json
+import re
 import datetime
-import atoml
 import pytest
+import atoml
 from atoml.compat import basestring, long
+from atoml.tz import TomlTZ
 
 TEST_DIR = os.path.join(os.path.dirname(__file__), 'toml-test', 'tests')
 SUPPORTED_TYPES = ('string', 'integer', 'float', 'datetime', 'bool', 'array')
@@ -13,6 +15,18 @@ IGNORE_TESTS = [
     'string-bad-escape',
     'string-byte-escapes'
 ]
+
+
+def convert_datetime(datestring):
+    match = re.match(r'(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})'
+                     r'(\.\d{6})?(Z|[+-]\d{2}:\d{2})?', datestring)
+    date_string = match.group(1).replace('T', ' ')
+    dt = datetime.datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+    if match.group(2):
+        dt = dt.replace(microsecond=int(match.group(2)[1:]))
+    if match.group(3):
+        dt = dt.replace(tzinfo=TomlTZ(match.group(3)))
+    return dt
 
 
 def tag(value):
@@ -51,7 +65,7 @@ def untag(value):
         return d
     t, v = value['type'], value['value']
     if t == 'array':
-        return [untag(i) for i in v['value']]
+        return [untag(i) for i in v]
     elif t == 'string':
         return v
     elif t == 'integer':
@@ -61,7 +75,7 @@ def untag(value):
     elif t == 'bool':
         return v == 'true'
     elif t == 'datetime':
-        return datetime.datetime.strptime(v, '%Y-%m-%dT%H:%M:%SZ')
+        return convert_datetime(v)
     else:
         raise ValueError('Value type is not supported: %r' % t)
 
@@ -97,8 +111,8 @@ def test_invalid_decode(dirname, name):
         atoml.load(open(toml_file))
 
 
-@pytest.mark.parametrize('dirname,name', list_dir('invalid-encoder'))
+@pytest.mark.parametrize('dirname,name', list_dir('invalid-encoder', '.json'))
 def test_invalid_encode(dirname, name):
     json_file = os.path.join(dirname, name + '.json')
     with pytest.raises(ValueError):
-        atoml.dump(untag(json.load(open(json_file))))
+        atoml.dumps(untag(json.load(open(json_file))))

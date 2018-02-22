@@ -13,7 +13,6 @@ from datetime import date, datetime, time
 
 from atoml.compat import IS_PY3, StringIO, basestring, long, unicode
 from atoml.errors import TomlEncodeError
-from atoml.tz import TomlTZ
 
 if not IS_PY3:
     str = unicode   # noqa
@@ -23,6 +22,7 @@ class Encoder(object):
     """Encoder class to represent objects as string"""
     lookup_dict = {
         'string': basestring,
+        'bool': bool,
         'integer': (int, long),
         'datetime': datetime,
         'time': time,
@@ -61,8 +61,7 @@ class Encoder(object):
         return str(obj).lower()
 
     def represent_datetime(self, obj):
-        return obj.strftime('%Y-%m-%dT%H:%M:%S.%f') + \
-            TomlTZ.represent_tz(obj.tzinfo)
+        return obj.isoformat().replace('+00:00', 'Z')
 
     def represent_date(self, obj):
         return obj.strftime('%Y-%m-%d')
@@ -74,16 +73,14 @@ class Encoder(object):
         return '[ ' + ', '.join(self.represent(item) for item in obj) + ' ]'
 
     def represent_string(self, obj):
-        rv = str(obj).replace('"', '\\"')
+        rv = str(obj).replace('\\', '\\\\').replace('\n', '\\n')
+        rv = rv.replace('"', '\\"')
         return '"%s"' % rv
 
     def write_dict(self, obj, header=None):
         header = header or []
         sub_tables = []
         table_arrays = []
-        if header:
-            self._write(
-                '%s[%s]\n\n' % (self._indent, _table_header(header)))
         for k, v in obj.items():
             if isinstance(v, dict):
                 sub_tables.append(k)
@@ -98,6 +95,7 @@ class Encoder(object):
 
         for table in sub_tables:
             self._write('\n')
+            self._write('%s[%s]\n\n' % (self._indent, _table_header(header + [table])))
             self.write_dict(obj[table], header + [table])
 
         for array in table_arrays:
@@ -106,7 +104,7 @@ class Encoder(object):
                 self._write(
                     '%s[[%s]]\n\n' % (self._indent, _table_header(header + [array])))
                 with self.indent():
-                    self.write_dict(item)
+                    self.write_dict(item, header + [array])
 
     def _write(self, string):
         # if not IS_PY3 and isinstance(string, unicode):

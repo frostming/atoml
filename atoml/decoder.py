@@ -322,9 +322,9 @@ class Decoder(object):
     def __init__(self, instream, dict_=dict, converter=None):
         self.dict_ = dict_
         self.data = self.dict_()
-        if isinstance(instream, basestring):
-            instream = StringIO(instream)
-        self.instream = instream
+        if isinstance(instream, bytes):
+            instream = instream.decode('utf-8')
+        self.instream = StringIO(instream)
         if converter is None:
             converter = Converter(self)
         self.converter = converter
@@ -449,12 +449,10 @@ def load(f, dict_=dict):
     """Load and parse toml from a file object
     An additional argument `dict_` is used to specify the output type
     """
-    if not hasattr(f, 'readline'):
+    if not f.read:
         raise ValueError('The first parameter needs to be a file object, ',
                          '%r is passed' % type(f))
-    decoder = Decoder(f, dict_)
-    decoder.parse()
-    return decoder.data
+    return loads(f.read(), dict_)
 
 
 def loads(content, dict_=dict):
@@ -464,4 +462,6 @@ def loads(content, dict_=dict):
     if not isinstance(content, basestring):
         raise ValueError('The first parameter needs to be a string object, ',
                          '%r is passed' % type(content))
-    return load(StringIO(content), dict_)
+    decoder = Decoder(content, dict_)
+    decoder.parse()
+    return decoder.data

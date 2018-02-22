@@ -1,0 +1,23 @@
+
+language: python
+
+python:
+    - "2.7"
+    - "3.5"
+    - "3.6"
+    - "3.7"
+    - "pypy"
+
+install:
+    - pip install .
+    - pip install -r dev-requirements.txt
+
+script:
+    - coverage run --source=atoml -m pytest
+
+after_success:
+    - pip install coveralls
+    - coveralls
+
+notifications:
+    email: false

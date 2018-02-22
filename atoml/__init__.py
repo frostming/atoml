@@ -12,4 +12,4 @@ from atoml.decoder import loads, load
 from atoml.encoder import dumps, dump
 
 __author__ = 'Frost Ming'
-__version__ = '0.1.0'
+__version__ = '0.2.0'
