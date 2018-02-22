@@ -7,13 +7,13 @@
     :email: mianghong@gmail.com
     :license: BSD-2
 """
+import re
 from contextlib import contextmanager
 from datetime import date, datetime, time
 
-from toml.compat import basestring, long, StringIO, \
-                        IS_PY3, unicode
-from toml.errors import TomlEncodeError
-from toml.tz import TomlTZ
+from atoml.compat import IS_PY3, StringIO, basestring, long, unicode
+from atoml.errors import TomlEncodeError
+from atoml.tz import TomlTZ
 
 if not IS_PY3:
     str = unicode   # noqa
@@ -81,35 +81,33 @@ class Encoder(object):
         header = header or []
         sub_tables = []
         table_arrays = []
-        header_flag = False
+        if header:
+            self._write(
+                '%s[%s]\n\n' % (self._indent, _table_header(header)))
         for k, v in obj.items():
             if isinstance(v, dict):
                 sub_tables.append(k)
             elif isinstance(v, list) and _is_table_array(v):
                 table_arrays.append(k)
             else:
-                if not header_flag:
-                    if header:
-                        self._write(
-                            '%s[%s]\n\n' % (self._indent, _table_header(header)))
-                    header_flag = True
                 self._write('%s%s = %s\n' % (
                     self._indent,
                     _table_header([k]),
                     self.represent(v),
                 ))
-        self.outstream.write('\n')
 
         for table in sub_tables:
+            self._write('\n')
             self.write_dict(obj[table], header + [table])
 
         for array in table_arrays:
             for item in obj[array]:
+                self._write('\n')
                 self._write(
                     '%s[[%s]]\n\n' % (self._indent, _table_header(header + [array])))
                 with self.indent():
                     self.write_dict(item)
-        
+
     def _write(self, string):
         # if not IS_PY3 and isinstance(string, unicode):
         #     string = string.encode('utf-8')
@@ -120,7 +118,7 @@ def _table_header(headers):
     headers = headers or []
     rv = []
     for key in headers:
-        if '.' in headers:
+        if not re.match(r'^[a-zA-Z0-9_\-]+$', key):
             rv.append('"%s"' % key.replace('"', '\\"'))
         else:
             rv.append(key)

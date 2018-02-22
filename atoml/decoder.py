@@ -11,11 +11,18 @@ __all__ = ('Converter', 'Decoder', 'loads', 'load')
 
 import datetime
 import re
-import shlex
 
-from toml.errors import TomlDecodeError
-from toml.tz import TomlTZ
-from toml.compat import basestring, unichr, long, StringIO
+from atoml.errors import TomlDecodeError
+from atoml.tz import TomlTZ
+from atoml.compat import basestring, unichr, long, StringIO
+
+_DIGITS_WITH_LINE = r'(?:\d|(?<=\d)_(?=\d))+'
+_KEY_NAME = (r'\s*((\'|"|\'{3}|"{3})?(?(2).*?(?<!\\)\2|[a-zA-Z0-9_\-]+))\s*')
+KEY_RE = re.compile(r'%s= *' % _KEY_NAME)
+BLANK_RE = re.compile(r'^\s*(#.*)?$')
+TABLE_RE = re.compile(r'^\s*\[([^\[\]]+)\]\s*(#.*)?$')
+TABLE_ARRAY_RE = re.compile(r'^\s*\[{2}([^\[\]]+)\]{2}\s*(#.*)?$')
+MULTISTRING_RE = re.compile(r'^["]{3}(.*?)((?<!\\)["]{3})?')
 
 
 def contains_list(longer, shorter):
@@ -34,24 +41,38 @@ def cut_list(longer, shorter):
     return longer[len(shorter):]
 
 
-def split_string(string, splitter='.'):
+def split_string(string, splitter='.', allow_empty=True):
     """Split the string with respect of quotes"""
-    lex = shlex.shlex(string, posix=True)
-    lex.whitespace += splitter
-    lex.whitespace_split = True
-    return list(lex)
-
-
-_DIGITS_WITH_LINE = r'(?:\d|(?<=\d)_(?=\d))+'
-_TABLE_NAME = (r'((?:[^."#\s\[\]]+|"[^\"]+")'
-               r'(?:\s*\.\s*(?:[^."#\s\[\]]+|"[^\"]+"))*)')
-KEY_RE = re.compile(r'^\s*((?:[^."#=\s\[\]]+|"[^\"]*")'
-                    r'(?:\s*\.\s*(?:[^."#=\s\[\]]+|"[^\"]*"))*)'
-                    r' *= *')
-BLANK_RE = re.compile(r'^\s*(#.*)?$')
-TABLE_RE = re.compile(r'^\s*\[\s*%s\s*\]\s*(#.*)?$' % _TABLE_NAME)
-TABLE_ARRAY_RE = re.compile(r'^\s*\[{2}\s*%s\s*\]{2}\s*(#.*)?$' % _TABLE_NAME)
-MULTISTRING_RE = re.compile(r'^["]{3}(.*?)((?<!\\)["]{3})?')
+    i = 0
+    rv = []
+    need_split = False
+    while i < len(string):
+        m = re.compile(_KEY_NAME).match(string, i)
+        if not need_split and m:
+            i = m.end()
+            body = m.group(1)
+            if body[:3] == '"""':
+                body = Converter._replace_string(body[3:-3])
+            elif body[:3] == "'''":
+                body = body[3:-3]
+            elif body[0] == '"':
+                body = Converter._replace_string(body[1:-1])
+            elif body[0] == "'":
+                body = body[1:-1]
+            if not allow_empty and not body:
+                raise ValueError('Empty section name is not allowed: %r'
+                                 % string)
+            rv.append(body)
+            need_split = True
+        elif need_split and string[i] == splitter:
+            need_split = False
+            i += 1
+            continue
+        else:
+            raise ValueError('Illegal section name: %r' % string)
+    if not need_split:
+        raise ValueError('Empty section name is not allowed: %r' % string)
+    return rv
 
 
 class Converter:
@@ -327,7 +348,11 @@ class Decoder(object):
             if BLANK_RE.match(line):
                 continue
             if TABLE_RE.match(line):
-                next_table = split_string(TABLE_RE.match(line).group(1), '.')
+                try:
+                    next_table = split_string(
+                        TABLE_RE.match(line).group(1), '.', False)
+                except ValueError as e:
+                    raise TomlDecodeError(self.lineno, str(e))
                 if table_name and not contains_list(next_table, table_name):
                     self._store_table(sub_table, temp, is_array, data=data)
                     break
@@ -340,8 +365,11 @@ class Decoder(object):
                     sub_table = table
                     is_array = False
             elif TABLE_ARRAY_RE.match(line):
-                next_table = split_string(
-                    TABLE_ARRAY_RE.match(line).group(1), '.')
+                try:
+                    next_table = split_string(
+                        TABLE_ARRAY_RE.match(line).group(1), '.', False)
+                except ValueError as e:
+                    raise TomlDecodeError(self.lineno, str(e))
                 if table_name and not contains_list(next_table, table_name):
                     # Out of current loop
                     # write current data dict to table dict
@@ -360,14 +388,17 @@ class Decoder(object):
                     self.parse(temp, next_table)
             elif KEY_RE.match(line):
                 m = KEY_RE.match(line)
-                keys = split_string(m.group(1), '.')
+                try:
+                    keys = split_string(m.group(1), '.')
+                except ValueError as e:
+                    raise TomlDecodeError(self.lineno, str(e))
                 value = self.converter.convert(line[m.end():])
                 if value is None:
                     raise TomlDecodeError(self.lineno, 'Value is missing')
                 self._store_table(keys[:-1], {keys[-1]: value}, data=temp)
             else:
                 raise TomlDecodeError(self.lineno,
-                                      'Parsing error: %r' % line)
+                                      'Pattern is not recognized: %r' % line)
         # Rollback to the last line for next parse
         # This will do nothing if EOF is hit
         self.instream.seek(self.instream.tell() - len(line))
