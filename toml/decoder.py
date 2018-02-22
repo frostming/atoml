@@ -11,23 +11,11 @@ __all__ = ('Converter', 'Decoder', 'loads', 'load')
 
 import datetime
 import re
-import sys
 import shlex
 
 from toml.errors import TomlDecodeError
 from toml.tz import TomlTZ
-
-if sys.version_info[0] == 3:
-    unichr = chr
-    basestring = (str, bytes)
-    long = int
-    unicode = str
-    from io import BytesIO as StringIO
-else:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
+from toml.compat import basestring, unichr, long, StringIO
 
 
 def contains_list(longer, shorter):
@@ -41,26 +29,29 @@ def contains_list(longer, shorter):
 
 
 def cut_list(longer, shorter):
-    shorter = shorter or []
     """Cut the longer list with the shorter one"""
+    shorter = shorter or []
     return longer[len(shorter):]
 
 
 def split_string(string, splitter='.'):
+    """Split the string with respect of quotes"""
     lex = shlex.shlex(string, posix=True)
     lex.whitespace += splitter
     lex.whitespace_split = True
     return list(lex)
 
 
-KEY_RE = re.compile(r'^\s*([\'"])?'
-                    r'(?P<key>(?(1)(?!\1).|[^\s\'"=])+)'
-                    r'(?(1)\1) *= *')
-BLANK_RE = re.compile(r'^\s*(#.*)?$')
-TABLE_RE = re.compile(r'^\s*\[([^\[\]]+)\]\s*(#.*)?$')
-TABLE_ARRAY_RE = re.compile(r'^\s*\[{2}([^\[\]]+)\]{2}\s*(#.*)?$')
-MULTISTRING_RE = re.compile(r'^["]{3}(.*?)((?<!\\)["]{3})?')
 _DIGITS_WITH_LINE = r'(?:\d|(?<=\d)_(?=\d))+'
+_TABLE_NAME = (r'((?:[^."#\s\[\]]+|"[^\"]+")'
+               r'(?:\s*\.\s*(?:[^."#\s\[\]]+|"[^\"]+"))*)')
+KEY_RE = re.compile(r'^\s*((?:[^."#=\s\[\]]+|"[^\"]*")'
+                    r'(?:\s*\.\s*(?:[^."#=\s\[\]]+|"[^\"]*"))*)'
+                    r' *= *')
+BLANK_RE = re.compile(r'^\s*(#.*)?$')
+TABLE_RE = re.compile(r'^\s*\[\s*%s\s*\]\s*(#.*)?$' % _TABLE_NAME)
+TABLE_ARRAY_RE = re.compile(r'^\s*\[{2}\s*%s\s*\]{2}\s*(#.*)?$' % _TABLE_NAME)
+MULTISTRING_RE = re.compile(r'^["]{3}(.*?)((?<!\\)["]{3})?')
 
 
 class Converter:
@@ -77,8 +68,10 @@ class Converter:
                                r'|0o[0-7]+'
                                r'|0b[01]+)' % (_DIGITS_WITH_LINE,))),
         ('float', re.compile(r'([+-]?%s(?:\.%s)?'
-                             r'(?:[+-]?[eE]\d+)?)'
-                             % (_DIGITS_WITH_LINE, _DIGITS_WITH_LINE))),
+                             r'(?:[+-]?[eE]\d+)?'
+                             r'|[+-]?(?:inf|nan))'
+                             % (_DIGITS_WITH_LINE, _DIGITS_WITH_LINE),
+                             flags=re.I)),
         ('multi_string', re.compile(r'["]{3}')),
         ('multi_lit_string', re.compile(r"[']{3}")),
         ('string', re.compile(r'(?!"{3})"(.*?)(?<!\\)"')),
@@ -91,17 +84,18 @@ class Converter:
     lit_string_end_re = re.compile(r"(.*?)(?<!\\)'{3}")
 
     unescape_dict = {
-        '\\b': '\b',
-        '\\t': '\t',
-        '\\n': '\n',
-        '\\f': '\f',
-        '\\r': '\r',
-        '\\\\': '\\',
-        '\\"': '"'
+        r'\\b': '\b',
+        r'\\t': '\t',
+        r'\\n': '\n',
+        r'\\f': '\f',
+        r'\\r': '\r',
+        r'\\\\': '\\',
+        r'\\"': '"',
+        r'\\[uU]((?<=u)[a-fA-F0-9]{4}|(?<=U)[a-fA-F0-9]{8})':
+        lambda m: unichr(int(m.group(1), 16)),
     }
 
-    unescape_re = re.compile('|'.join(key.replace('\\', '\\\\')
-                                      for key in unescape_dict))
+    unescape_re = re.compile('|'.join(key for key in unescape_dict))
     list_end_re = re.compile(r' *\]')
     table_end_re = re.compile(r' *\}')
     sep_re = re.compile(r' *, *')
@@ -127,6 +121,7 @@ class Converter:
         for key, pattern in self.patterns:
             m = pattern.match(self.line)
             if m:
+                self.line = self.line[m.end():]
                 handler = getattr(self, 'convert_%s' % key)
                 token = handler(m)
                 break
@@ -139,23 +134,18 @@ class Converter:
         return token
 
     def convert_blank(self, match):
-        self.line = ''
         return None
 
     def convert_boolean(self, match):
-        self.line = self.line[match.end():]
         return match.group(1) == 'true'
 
     def convert_string(self, match):
-        self.line = self.line[match.end():]
         return self._replace_string(match.group(1))
 
     def convert_lit_string(self, match):
-        self.line = self.line[match.end():]
         return match.group(1)
 
     def convert_integer(self, match):
-        self.line = self.line[match.end():]
         number = match.group(1)
         base = 10
         if number.startswith('0x'):
@@ -167,11 +157,9 @@ class Converter:
         return long(number.replace('_', ''), base)
 
     def convert_float(self, match):
-        self.line = self.line[match.end():]
         return float(match.group(1).replace('_', ''))
 
     def convert_datetime(self, match):
-        self.line = self.line[match.end():]
         date_string = match.group(1).replace('T', ' ')
         dt = datetime.datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
         if match.group(2):
@@ -181,23 +169,21 @@ class Converter:
         return dt
 
     def convert_date(self, match):
-        self.line = self.line[match.end():]
         dt = datetime.datetime.strptime(match.group(1), '%Y-%m-%d')
         return dt.date()
 
     def convert_time(self, match):
-        self.line = self.line[match.end():]
         dt = datetime.datetime.strptime(match.group(1), '%H:%M:%S')
         if match.group(2):
             dt = dt.replace(microsecond=int(match.group(2)[1:]))
         return dt.time()
 
     def convert_multi_string(self, match):
-        self.line = self.line[match.end():]
         parts = []
         if not self.line.rstrip():
             parts.append('')
             self.line = self.parser._readline()
+        skip_whitespace = False
         while True:
             if not self.line:
                 raise TomlDecodeError(self.parser.lineno,
@@ -209,9 +195,13 @@ class Converter:
             else:
                 content = self.line
                 self.line = self.parser._readline()
-            if parts and parts[-1].rstrip() and parts[-1].rstrip()[-1] == '\\':
-                parts[-1] = parts[-1].rstrip()[:-1]
+            if skip_whitespace:
                 content = content.lstrip()
+            if content.rstrip() and content.rstrip()[-1] == '\\':
+                content = content.rstrip()[:-1]
+                skip_whitespace = True
+            elif content.strip():
+                skip_whitespace = False
             parts.append(content)
             if m:
                 break
@@ -219,7 +209,6 @@ class Converter:
         return self._replace_string(''.join(parts))
 
     def convert_multi_lit_string(self, match):
-        self.line = self.line[match.end():]
         parts = []
         if not self.line.rstrip():
             parts.append('')
@@ -242,16 +231,17 @@ class Converter:
 
     @staticmethod
     def _replace_string(string):
-        string = Converter.unescape_re.sub(
-            lambda m: Converter.unescape_dict[m.group()],
-            string
-        )
-        string = re.sub(r'\\[uU]((?<=u)[a-fA-F0-9]{4}|(?<=U)[a-fA-F0-9]{8})',
-                        lambda m: unichr(int(m.group(1), 16)), string)
+        def _replace(m):
+            for pattern, target in Converter.unescape_dict.items():
+                if re.match(pattern, m.group()):
+                    if callable(target):
+                        return target(m)
+                    else:
+                        return target
+        string = Converter.unescape_re.sub(_replace, string)
         return string
 
     def convert_list_begin(self, match):
-        self.line = self.line[match.end():]
         temp = []
         ele_type = None
         while True:
@@ -277,7 +267,6 @@ class Converter:
         return temp
 
     def convert_table_begin(self, match):
-        self.line = self.line[match.end():]
         temp = self.parser.dict_()
         while True:
             if self.table_end_re.match(self.line):
@@ -292,7 +281,7 @@ class Converter:
                 raise TomlDecodeError(self.parser.lineno,
                                       'Key pair missing')
             self.line = self.line[m.end():]
-            keys = split_string(m.groupdict()['key'], '.')
+            keys = split_string(m.group(1), '.')
             value = self.convert(is_end=False)
             if value is None:
                 raise TomlDecodeError(self.parser.lineno,
@@ -371,7 +360,7 @@ class Decoder(object):
                     self.parse(temp, next_table)
             elif KEY_RE.match(line):
                 m = KEY_RE.match(line)
-                keys = split_string(m.groupdict()['key'], '.')
+                keys = split_string(m.group(1), '.')
                 value = self.converter.convert(line[m.end():])
                 if value is None:
                     raise TomlDecodeError(self.lineno, 'Value is missing')
@@ -381,11 +370,11 @@ class Decoder(object):
                                       'Parsing error: %r' % line)
         # Rollback to the last line for next parse
         # This will do nothing if EOF is hit
-        self.instream.seek(-len(line), 1)
+        self.instream.seek(self.instream.tell() - len(line))
         self.lineno -= 1
 
     def _store_table(self, table_name, table, is_array=False, data=None):
-        if not table:
+        if not table and not table_name:
             return
         if data is None:
             data = self.data
@@ -444,6 +433,4 @@ def loads(content, dict_=dict):
     if not isinstance(content, basestring):
         raise ValueError('The first parameter needs to be a string object, ',
                          '%r is passed' % type(content))
-    if isinstance(content, unicode):
-        content = content.encode('utf-8')
     return load(StringIO(content), dict_)
