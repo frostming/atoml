@@ -10,9 +10,13 @@
 from contextlib import contextmanager
 from datetime import date, datetime, time
 
-from toml.compat import basestring, long, StringIO
+from toml.compat import basestring, long, StringIO, \
+                        IS_PY3, unicode
 from toml.errors import TomlEncodeError
 from toml.tz import TomlTZ
+
+if not IS_PY3:
+    str = unicode   # noqa
 
 
 class Encoder(object):
@@ -86,10 +90,10 @@ class Encoder(object):
             else:
                 if not header_flag:
                     if header:
-                        self.outstream.write(
+                        self._write(
                             '%s[%s]\n\n' % (self._indent, _table_header(header)))
                     header_flag = True
-                self.outstream.write('%s%s = %s\n' % (
+                self._write('%s%s = %s\n' % (
                     self._indent,
                     _table_header([k]),
                     self.represent(v),
@@ -101,10 +105,15 @@ class Encoder(object):
 
         for array in table_arrays:
             for item in obj[array]:
-                self.outstream.write(
+                self._write(
                     '%s[[%s]]\n\n' % (self._indent, _table_header(header + [array])))
                 with self.indent():
                     self.write_dict(item)
+        
+    def _write(self, string):
+        # if not IS_PY3 and isinstance(string, unicode):
+        #     string = string.encode('utf-8')
+        self.outstream.write(string)
 
 
 def _table_header(headers):

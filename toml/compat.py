@@ -10,7 +10,9 @@
 # flake8: noqa
 import sys
 
-if sys.version_info[0] == 3:    # PY3
+IS_PY3 = sys.version_info[0] == 3
+
+if IS_PY3:    # PY3
     unichr = chr
     basestring = (str, bytes)
     long = int
@@ -21,7 +23,6 @@ else:   # PY2
     unichr = unichr
     long = long
     unicode = unicode
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
+    # cStringIO doesn't support unicode input
+    # So have to use StringIO
+    from StringIO import StringIO

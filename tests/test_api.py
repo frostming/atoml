@@ -37,10 +37,10 @@ def tag(value):
 
 def untag(value):
     if isinstance(value, dict):
-        if set(value.keys()) == {'type', 'value'} and value['type'] in SUPPORTED_TYPE:
+        if set(value.keys()) == {'type', 'value'} and value['type'] in SUPPORTED_TYPES:
             return untag(value['value'])
+        d = {}
         for k, v in value.items():
-            d = {}
             d[k] = untag(v)
         return d
     elif isinstance(value, list):
