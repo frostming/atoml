@@ -17,20 +17,27 @@ from atoml.errors import TomlEncodeError
 if not IS_PY3:
     str = unicode   # noqa
 
+_escapes = {'\n': '\\n', '\r': '\\r', '\\': '\\\\', '\t': '\\t',
+            '\b': '\\b', '\f': '\\f', '"': '\\"'}
 
 class Encoder(object):
-    """Encoder class to represent objects as string"""
-    lookup_dict = {
-        'string': basestring,
-        'bool': bool,
-        'integer': (int, long),
-        'datetime': datetime,
-        'time': time,
-        'date': date,
-        'list': (tuple, list),
-        'table': dict,
-        'float': float,
-    }
+    """Encoder class to represent objects as string
+
+    :param outstream: a string object to be parsed
+    :param indent_incr: the indent increment inside a table array block
+    """
+    # conversion handlers, use tuple list to preserve the order
+    lookup_dict = [
+        ('string', basestring),
+        ('bool', bool),
+        ('integer', (int, long)),
+        ('datetime', datetime),
+        ('time', time),
+        ('date', date),
+        ('list', (tuple, list)),
+        ('table', dict),
+        ('float', float),
+    ]
 
     def __init__(self, outstream, indent_incr=2):
         self.indent_incr = indent_incr
@@ -47,7 +54,7 @@ class Encoder(object):
         self._indent = old_indent
 
     def represent(self, obj):
-        for name, types in Encoder.lookup_dict.items():
+        for name, types in Encoder.lookup_dict:
             if isinstance(obj, types):
                 func = getattr(self, 'represent_%s' % name,
                                self.represent_default)
@@ -59,6 +66,9 @@ class Encoder(object):
 
     def represent_bool(self, obj):
         return str(obj).lower()
+
+    def represent_float(self, obj):
+        return repr(obj)
 
     def represent_datetime(self, obj):
         return obj.isoformat().replace('+00:00', 'Z')
@@ -73,9 +83,28 @@ class Encoder(object):
         return '[ ' + ', '.join(self.represent(item) for item in obj) + ' ]'
 
     def represent_string(self, obj):
-        rv = str(obj).replace('\\', '\\\\').replace('\n', '\\n')
-        rv = rv.replace('"', '\\"')
-        return '"%s"' % rv
+        s = str(obj)
+        start = 0
+        i = 0
+        res = []
+
+        def flush():
+            if start < i:
+                res.append(s[start:i])
+            return i + 1
+
+        while i < len(s):
+            c = s[i]
+            if c in _escapes:
+                start = flush()
+                res.append(_escapes[c])
+            elif ord(c) < 0x20:
+                start = flush()
+                res.append('\\u%04x' % ord(c))
+            i += 1
+
+        flush()
+        return '"' + ''.join(res) + '"'
 
     def write_dict(self, obj, header=None):
         header = header or []

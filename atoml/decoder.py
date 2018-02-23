@@ -41,40 +41,6 @@ def cut_list(longer, shorter):
     return longer[len(shorter):]
 
 
-def split_string(string, splitter='.', allow_empty=True):
-    """Split the string with respect of quotes"""
-    i = 0
-    rv = []
-    need_split = False
-    while i < len(string):
-        m = re.compile(_KEY_NAME).match(string, i)
-        if not need_split and m:
-            i = m.end()
-            body = m.group(1)
-            if body[:3] == '"""':
-                body = Converter._replace_string(body[3:-3])
-            elif body[:3] == "'''":
-                body = body[3:-3]
-            elif body[0] == '"':
-                body = Converter._replace_string(body[1:-1])
-            elif body[0] == "'":
-                body = body[1:-1]
-            if not allow_empty and not body:
-                raise ValueError('Empty section name is not allowed: %r'
-                                 % string)
-            rv.append(body)
-            need_split = True
-        elif need_split and string[i] == splitter:
-            need_split = False
-            i += 1
-            continue
-        else:
-            raise ValueError('Illegal section name: %r' % string)
-    if not need_split:
-        raise ValueError('Empty section name is not allowed: %r' % string)
-    return rv
-
-
 class Converter:
 
     patterns = [
@@ -104,26 +70,50 @@ class Converter:
     string_end_re = re.compile(r'(.*?)(?<!\\)"{3}')
     lit_string_end_re = re.compile(r"(.*?)(?<!\\)'{3}")
 
-    unescape_dict = {
-        r'\\b': '\b',
-        r'\\t': '\t',
-        r'\\n': '\n',
-        r'\\f': '\f',
-        r'\\r': '\r',
-        r'\\\\': '\\',
-        r'\\"': '"',
-        r'\\[uU]((?<=u)[a-fA-F0-9]{4}|(?<=U)[a-fA-F0-9]{8})':
-        lambda m: unichr(int(m.group(1), 16)),
+    escapes = {
+        'b': '\b',
+        't': '\t',
+        'n': '\n',
+        'f': '\f',
+        'r': '\r',
+        '\\': '\\',
+        '"': '"',
+        '/': '/',
+        "'": "'"
     }
 
-    unescape_re = re.compile('|'.join(key for key in unescape_dict))
     list_end_re = re.compile(r' *\]')
     table_end_re = re.compile(r' *\}')
     sep_re = re.compile(r' *, *')
+    basicstr_re = re.compile(r'[^"\\\000-\037]*')
+    unicode_re = re.compile(r'[uU]((?<=u)[a-fA-F0-9]{4}|(?<=U)[a-fA-F0-9]{8})')
 
     def __init__(self, parser):
         self.parser = parser
         self.line = None
+
+    def unescape(self, string):
+        tokens = []
+        i = 0
+        while True:
+            m = Converter.basicstr_re.match(string, i)
+            i = m.end()
+            tokens.append(m.group())
+            if i == len(string) or string[i] != '\\':
+                break
+            else:
+                i += 1
+            if Converter.unicode_re.match(string, i):
+                m = Converter.unicode_re.match(string, i)
+                i = m.end()
+                tokens.append(unichr(int(m.group(1), 16)))
+            else:
+                if string[i] not in Converter.escapes:
+                    raise TomlDecodeError(self.parser.lineno,
+                                          'Bad escape: \\%s' % string[i])
+                tokens.append(Converter.escapes[string[i]])
+                i += 1
+        return ''.join(tokens)
 
     def convert(self, line=None, is_end=True):
         """Read the line content and return the converted value
@@ -161,7 +151,7 @@ class Converter:
         return match.group(1) == 'true'
 
     def convert_string(self, match):
-        return self._replace_string(match.group(1))
+        return self.unescape(match.group(1))
 
     def convert_lit_string(self, match):
         return match.group(1)
@@ -227,7 +217,7 @@ class Converter:
             if m:
                 break
 
-        return self._replace_string(''.join(parts))
+        return self.unescape(''.join(parts))
 
     def convert_multi_lit_string(self, match):
         parts = []
@@ -249,18 +239,6 @@ class Converter:
             if m:
                 break
         return ''.join(parts)
-
-    @staticmethod
-    def _replace_string(string):
-        def _replace(m):
-            for pattern, target in Converter.unescape_dict.items():
-                if re.match(pattern, m.group()):
-                    if callable(target):
-                        return target(m)
-                    else:
-                        return target
-        string = Converter.unescape_re.sub(_replace, string)
-        return string
 
     def convert_list_begin(self, match):
         temp = []
@@ -302,7 +280,7 @@ class Converter:
                 raise TomlDecodeError(self.parser.lineno,
                                       'Key pair missing')
             self.line = self.line[m.end():]
-            keys = split_string(m.group(1), '.')
+            keys = self.split_string(m.group(1), '.')
             value = self.convert(is_end=False)
             if value is None:
                 raise TomlDecodeError(self.parser.lineno,
@@ -348,11 +326,8 @@ class Decoder(object):
             if BLANK_RE.match(line):
                 continue
             if TABLE_RE.match(line):
-                try:
-                    next_table = split_string(
-                        TABLE_RE.match(line).group(1), '.', False)
-                except ValueError as e:
-                    raise TomlDecodeError(self.lineno, str(e))
+                next_table = self.split_string(
+                    TABLE_RE.match(line).group(1), '.', False)
                 if table_name and not contains_list(next_table, table_name):
                     self._store_table(sub_table, temp, is_array, data=data)
                     break
@@ -365,11 +340,8 @@ class Decoder(object):
                     sub_table = table
                     is_array = False
             elif TABLE_ARRAY_RE.match(line):
-                try:
-                    next_table = split_string(
-                        TABLE_ARRAY_RE.match(line).group(1), '.', False)
-                except ValueError as e:
-                    raise TomlDecodeError(self.lineno, str(e))
+                next_table = self.split_string(
+                    TABLE_ARRAY_RE.match(line).group(1), '.', False)
                 if table_name and not contains_list(next_table, table_name):
                     # Out of current loop
                     # write current data dict to table dict
@@ -388,10 +360,7 @@ class Decoder(object):
                     self.parse(temp, next_table)
             elif KEY_RE.match(line):
                 m = KEY_RE.match(line)
-                try:
-                    keys = split_string(m.group(1), '.')
-                except ValueError as e:
-                    raise TomlDecodeError(self.lineno, str(e))
+                keys = self.split_string(m.group(1), '.')
                 value = self.converter.convert(line[m.end():])
                 if value is None:
                     raise TomlDecodeError(self.lineno, 'Value is missing')
@@ -443,6 +412,43 @@ class Decoder(object):
         if isinstance(line, bytes):
             line = line.decode('utf-8')
         return line
+
+    def split_string(self, string, splitter='.', allow_empty=True):
+        """Split the string with respect of quotes"""
+        i = 0
+        rv = []
+        need_split = False
+        while i < len(string):
+            m = re.compile(_KEY_NAME).match(string, i)
+            if not need_split and m:
+                i = m.end()
+                body = m.group(1)
+                if body[:3] == '"""':
+                    body = self.converter.unescape(body[3:-3])
+                elif body[:3] == "'''":
+                    body = body[3:-3]
+                elif body[0] == '"':
+                    body = self.converter.unescape(body[1:-1])
+                elif body[0] == "'":
+                    body = body[1:-1]
+                if not allow_empty and not body:
+                    raise TomlDecodeError(
+                        self.lineno,
+                        'Empty section name is not allowed: %r' % string)
+                rv.append(body)
+                need_split = True
+            elif need_split and string[i] == splitter:
+                need_split = False
+                i += 1
+                continue
+            else:
+                raise TomlDecodeError(self.lineno,
+                                      'Illegal section name: %r' % string)
+        if not need_split:
+            raise TomlDecodeError(
+                self.lineno,
+                'Empty section name is not allowed: %r' % string)
+        return rv
 
 
 def load(f, dict_=dict):

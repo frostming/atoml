@@ -5,6 +5,9 @@ AToml
     :target: http://pypi.python.org/pypi/atoml
 .. image:: https://travis-ci.org/frostming/atoml.svg?branch=master
     :target: https://travis-ci.org/frostming/atoml
+.. image:: https://coveralls.io/repos/github/frostming/atoml/badge.svg?branch=master
+    :target: https://coveralls.io/github/frostming/atoml?branch=master
+
 
 This library is a Python implementation of `TOML <https://github.com/toml-lang/toml>`_ and conforms `v0.4.0 specs <https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md>`_. This library runs on Python 2.7 and 3.5+.
 

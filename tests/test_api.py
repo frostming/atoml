@@ -3,18 +3,12 @@ import json
 import re
 import datetime
 import pytest
-import atoml
+import atoml as toml
 from atoml.compat import basestring, long
 from atoml.tz import TomlTZ
 
 TEST_DIR = os.path.join(os.path.dirname(__file__), 'toml-test', 'tests')
 SUPPORTED_TYPES = ('string', 'integer', 'float', 'datetime', 'bool', 'array')
-# These tests are no longer valid in TOML v0.4.0
-IGNORE_TESTS = [
-    'string-bad-byte-escape',
-    'string-bad-escape',
-    'string-byte-escapes'
-]
 
 
 def convert_datetime(datestring):
@@ -86,8 +80,6 @@ def list_dir(subdir, postfix='.toml'):
     rv = []
     for path in os.listdir(dirpath):
         if path.endswith(postfix):
-            if path[:-len(postfix)] in IGNORE_TESTS:
-                continue
             rv.append((dirpath, path[:-len(postfix)]))
     return rv
 
@@ -96,10 +88,10 @@ def list_dir(subdir, postfix='.toml'):
 def test_valid(dirname, name):
     toml_file = os.path.join(dirname, name + '.toml')
     json_file = os.path.join(dirname, name + '.json')
-    decoded = atoml.load(open(toml_file))
+    decoded = toml.load(open(toml_file))
     golden = untag(json.load(open(json_file)))
-    encoded = atoml.dumps(decoded)
-    decoded2 = atoml.loads(encoded)
+    encoded = toml.dumps(decoded)
+    decoded2 = toml.loads(encoded)
     assert decoded == golden, "Decoded result is not equal to golden: %s" % name
     assert decoded2 == golden, "Decoded encoded result is not equal to golden: %s" % name
 
@@ -107,12 +99,12 @@ def test_valid(dirname, name):
 @pytest.mark.parametrize('dirname,name', list_dir('invalid'))
 def test_invalid_decode(dirname, name):
     toml_file = os.path.join(dirname, name + '.toml')
-    with pytest.raises(ValueError):
-        atoml.load(open(toml_file))
+    with pytest.raises(Exception):
+        toml.load(open(toml_file))
 
 
 @pytest.mark.parametrize('dirname,name', list_dir('invalid-encoder', '.json'))
 def test_invalid_encode(dirname, name):
     json_file = os.path.join(dirname, name + '.json')
-    with pytest.raises(ValueError):
-        atoml.dumps(untag(json.load(open(json_file))))
+    with pytest.raises(Exception):
+        toml.dumps(untag(json.load(open(json_file))))
