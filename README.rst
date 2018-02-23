@@ -1,7 +1,7 @@
 AToml
 =====
 
-.. image:: https://img.shields.io/pypi/v/nine.svg
+.. image:: https://img.shields.io/pypi/v/atoml.svg
     :target: http://pypi.python.org/pypi/atoml
 .. image:: https://travis-ci.org/frostming/atoml.svg?branch=master
     :target: https://travis-ci.org/frostming/atoml
