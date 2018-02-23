@@ -28,16 +28,3 @@ class TomlTZ(tzinfo):
 
     def dst(self, dt):
         return timedelta(0)
-
-    @staticmethod
-    def represent_tz(tzinfo):
-        if not tzinfo:
-            return 'Z'
-        offset = tzinfo.utcoffset(None)
-        sign = '+'
-        if offset.total_seconds() < 0:
-            offset = -offset
-            sign = '-'
-        hours = offset.seconds // 3600
-        minutes = (offset.seconds % 3600) // 60
-        return '%s%02d:%02d' % (sign, hours, minutes)
