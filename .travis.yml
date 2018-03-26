@@ -9,8 +9,8 @@ python:
     - "pypy"
 
 install:
-    - pip install .
-    - pip install -r dev-requirements.txt
+    - pip install -U pipenv
+    - pipenv install --dev
 
 script:
     - coverage run --source=atoml -m pytest

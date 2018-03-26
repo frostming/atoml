@@ -41,6 +41,18 @@ def cut_list(longer, shorter):
     return longer[len(shorter):]
 
 
+class TomlInlineTable(object):
+    """Sentinel class for inline table"""
+    pass
+
+
+def empty_inline_table(base=dict):
+    """Create an empty inline table with given base class"""
+    class TemporaryInlineTable(base, TomlInlineTable):
+        pass
+    return TemporaryInlineTable()
+
+
 class Converter:
 
     patterns = [
@@ -266,7 +278,7 @@ class Converter:
         return temp
 
     def convert_table_begin(self, match):
-        temp = self.parser.dict_()
+        temp = empty_inline_table(self.parser.dict_)
         while True:
             if self.table_end_re.match(self.line):
                 self.line = self.line[
@@ -280,7 +292,7 @@ class Converter:
                 raise TomlDecodeError(self.parser.lineno,
                                       'Key pair missing')
             self.line = self.line[m.end():]
-            keys = self.split_string(m.group(1), '.')
+            keys = self.parser.split_string(m.group(1), '.')
             value = self.convert(is_end=False)
             if value is None:
                 raise TomlDecodeError(self.parser.lineno,

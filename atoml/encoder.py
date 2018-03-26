@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from datetime import date, datetime, time
 
 from atoml.compat import IS_PY3, StringIO, basestring, long, unicode
+from atoml.decoder import TomlInlineTable
 from atoml.errors import TomlEncodeError
 
 if not IS_PY3:
@@ -25,6 +26,7 @@ class Encoder(object):
 
     :param outstream: a string object to be parsed
     :param indent_incr: the indent increment inside a table array block
+    :param preserve: optional flag if preserve the inline tables
     """
     # conversion handlers, use tuple list to preserve the order
     lookup_dict = [
@@ -35,14 +37,15 @@ class Encoder(object):
         ('time', time),
         ('date', date),
         ('list', (tuple, list)),
-        ('table', dict),
+        ('inline_table', TomlInlineTable),
         ('float', float),
     ]
 
-    def __init__(self, outstream, indent_incr=2):
+    def __init__(self, outstream, indent_incr=2, preserve=False):
         self.indent_incr = indent_incr
         self._indent = ''
         self.outstream = outstream
+        self.preserve = preserve
 
     @contextmanager
     def indent(self, preceding=None):
@@ -80,7 +83,19 @@ class Encoder(object):
         return obj.strftime('%H:%M:%S.%f')
 
     def represent_list(self, obj):
-        return '[ ' + ', '.join(self.represent(item) for item in obj) + ' ]'
+        if obj and isinstance(obj[0], TomlInlineTable):
+            with self.indent():
+                conn = '\n%s' % self._indent
+                return '[' + conn.join(self.represent(v) for v in obj) + ']'
+        return '[' + ', '.join(self.represent(item) for item in obj) + ']'
+
+    def represent_inline_table(self, obj):
+        return ('{' +
+                ', '.join(
+                    '{0} = {1}'.format(_table_header([k]), self.represent(v))
+                    for k, v in obj.items()
+                )
+                + '}')
 
     def represent_string(self, obj):
         s = str(obj)
@@ -111,9 +126,9 @@ class Encoder(object):
         sub_tables = []
         table_arrays = []
         for k, v in obj.items():
-            if isinstance(v, dict):
+            if isinstance(v, dict) and not (self.preserve and isinstance(v, TomlInlineTable)):
                 sub_tables.append(k)
-            elif isinstance(v, list) and _is_table_array(v):
+            elif isinstance(v, list) and _is_table_array(v, self.preserve):
                 table_arrays.append(k)
             else:
                 self._write('%s%s = %s\n' % (
@@ -152,31 +167,35 @@ def _table_header(headers):
     return '.'.join(rv)
 
 
-def _is_table_array(obj):
+def _is_table_array(obj, preserve=False):
     if not obj:
-        return True
+        return False
+    if preserve and isinstance(obj[0], TomlInlineTable):
+        return False
     if len(obj) > 1 and type(obj[0]) != type(obj[1]):
         raise TomlEncodeError('Cannot dump array of different types')
     return isinstance(obj[0], dict)
 
 
-def dump(obj, f):
+def dump(obj, f, preserve=False):
     """Write dict object into file
 
     :param obj: the object to be dumped into toml
     :param f: the file object
+    :param preserve: optional flag to preserve the inline table in result
     """
     if not f.write:
         raise TypeError('You can only dump an object into a file object')
-    encoder = Encoder(f)
+    encoder = Encoder(f, preserve=preserve)
     return encoder.write_dict(obj)
 
 
-def dumps(obj):
+def dumps(obj, preserve=False):
     """Stringifies a dict as toml
 
     :param obj: the object to be dumped into toml
+    :param preserve: optional flag to preserve the inline table in result
     """
     f = StringIO()
-    dump(obj, f)
+    dump(obj, f, preserve)
     return f.getvalue()
