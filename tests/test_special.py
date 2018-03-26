@@ -1,4 +1,5 @@
 import atoml as toml
+from collections import OrderedDict
 from atoml.decoder import TomlInlineTable, empty_inline_table
 
 
@@ -22,7 +23,7 @@ def test_encode_array_of_inline_table():
     data = [('apple', 'red'), ('banana', 'yellow'), ('grape', 'purple')]
     my_dict = {'fruit': []}
     for name, color in data:
-        item = empty_inline_table()
+        item = empty_inline_table(OrderedDict)
         item['name'] = name
         item['color'] = color
         my_dict['fruit'].append(item)
