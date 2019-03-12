@@ -16,7 +16,9 @@ def test_encode_inline_table():
     data['info'].update({'country': 'china', 'postcode': 350012})
 
     encoded = toml.dumps(data, preserve=True)
-    assert 'info = {country = "china", postcode = 350012}' in encoded
+    assert 'info = {' in encoded
+    assert 'country = "china"' in encoded
+    assert 'postcode = 350012' in encoded
 
 
 def test_encode_array_of_inline_table():
