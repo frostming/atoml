@@ -1,0 +1,204 @@
+// The EBNF of TOML for lark parser
+// Taken and adapted from https://github.com/toml-lang/toml/blob/master/toml.abnf
+
+// Overall Structure
+?start: toml
+
+?toml: expression ( newline expression )*
+
+expression: ws comment?
+    | ws keyval ws comment?
+    | ws table ws comment?
+
+// Whitespace
+
+ws: wschar*
+wschar: /[ \t]/
+
+// Newline
+
+newline: /\r?\n/
+
+// Comment
+
+non_ascii: /[\u0080-\ud7ff|\ue000-\U0010ffff]/
+non_eol: /[\t\x20-\x7f]/ | non_ascii
+
+comment: "#" non_eol*
+
+// Key-Value pairs
+
+keyval: key keyval_sep val
+
+key: simple_key | dotted_key
+simple_key: quoted_key | unquoted_key
+
+unquoted_key: /[\w_-]+/
+quoted_key: basic_string | literal_string
+dotted_key: simple_key ( dot_sep simple_key )+
+
+dot_sep  : ws "." ws
+keyval_sep: ws "=" ws
+
+val: string | boolean | array | inline_table | date_time | float | integer
+
+// String
+
+string: ml_basic_string | basic_string | ml_literal_string | literal_string
+
+// Basic String
+
+basic_string: quotation_mark basic_char* quotation_mark
+
+quotation_mark: "\""
+
+basic_char: basic_unescaped | escaped
+basic_unescaped: wschar
+    | /[!#-\[\]-~]/
+    | non_ascii
+escaped: escape escape_seq_char
+
+escape: "\\"
+escape_seq_char: /["\\bfnrt]/
+    | "u" HEXDIGIT ~ 4              -> unicode
+    | "U" HEXDIGIT ~ 8              -> big_unicode
+
+// Multiline Basic String
+
+ml_basic_string: ml_basic_string_delim ml_basic_body ml_basic_string_delim
+ml_basic_string_delim: quotation_mark ~ 3
+ml_basic_body: mlb_content* ( mlb_quotes mlb_content+ )* mlb_quotes?
+
+mlb_content: mlb_char | newline | mlb_escaped_nl
+mlb_char: mlb_unescaped | escaped
+mlb_quotes: quotation_mark ~ 1..2
+mlb_unescaped: wschar | /[!#\[\]-~]/ | non_ascii
+mlb_escaped_nl: escape ws newline ( wschar | newline )*
+
+// Literal String
+
+literal_string: apostrophe literal_char* apostrophe
+
+apostrophe: "'"
+
+literal_char: /['\t -&(-~]/ | non_ascii
+
+// Multiline Literal String
+
+ml_literal_string: ml_literal_string_delim ml_literal_body ml_literal_string_delim
+ml_literal_string_delim: apostrophe ~ 3
+ml_literal_body: mll_content* ( mll_quotes mll_content+ )* mll_quotes?
+
+mll_content: mll_char | newline
+mll_char: /['\t -&(-~]/ | non_ascii
+mll_quotes: apostrophe ~ 1..2
+
+// Integer
+
+integer: dec_int | hex_int | oct_int | bin_int
+
+minus: "-"
+plus: "+"
+digit_sep: "_"
+
+dec_int: [ minus | plus ] unsigned_dec_int
+unsigned_dec_int: DIGIT | "0".."9" ( digit_sep? DIGIT )+
+
+hex_int: "0x" HEXDIGIT ( digit_sep? HEXDIGIT )*
+oct_int: "0o" "0".."7" ( digit_sep? "0".."7" )*
+bin_int: "0b" "0".."1" ( digit_sep? "0".."1" )*
+
+// Float
+
+float: dec_int ( exp | frac exp? )
+    | special_float
+
+frac: "." DIGIT ( digit_sep? DIGIT )*
+
+exp: "e" float_exp_part
+float_exp_part: [ minus | plus ] DIGIT ( digit_sep? DIGIT )*
+
+special_float: [ minus | plus ] ( inf | nan )
+inf: "inf"
+nan: "nan"
+
+// Boolean
+
+boolean: true | false
+true: "true"
+false: "false"
+
+// Date and Time (as defined in RFC 3339)
+
+date_time     : offset_date_time | local_date_time | local_date | local_time
+
+date_fullyear : DIGIT ~ 4
+date_month    : DIGIT ~ 2
+date_mday     : DIGIT ~ 2
+time_delim    : "T" | " "
+time_hour     : DIGIT ~ 2
+time_minute   : DIGIT ~ 2
+time_second   : DIGIT ~ 2
+time_secfrac  : "." DIGIT+
+time_numoffset: ( minus | plus ) time_hour ":" time_minute
+time_offset   : "Z" | time_numoffset
+
+partial_time  : time_hour ":" time_minute ":" time_second time_secfrac?
+full_date     : date_fullyear "-" date_month "-" date_mday
+full_time     : partial_time time_offset
+
+// Offset Date-Time
+
+offset_date_time: full_date time_delim full_time
+
+// Local Date-Time
+
+local_date_time: full_date time_delim partial_time
+
+// Local Date
+
+local_date: full_date
+
+// Local Time
+
+local_time: partial_time
+
+// Array
+
+array: "[" array_values? ws_comment_newline "]"
+
+array_values:  ws_comment_newline val ws "," array_values
+    | ws_comment_newline val ws ","?
+
+ws_comment_newline: ( wschar | comment? newline )*
+
+// Table
+
+table: std_table | array_table
+
+// Standard Table
+
+std_table: std_table_open key std_table_close
+
+std_table_open: "[" ws
+std_table_close: ws "]"
+
+// Inline Table
+
+inline_table: inline_table_open inline_table_keyvals? inline_table_close
+
+inline_table_keyvals: keyval ( inline_table_sep keyval )*
+inline_table_open: "{" ws
+inline_table_close: ws "}"
+inline_table_sep: ws "," ws
+
+// Array Table
+
+array_table: array_table_open key array_table_close
+array_table_open: "[[" ws
+array_table_close: ws "]]"
+
+// Built-in ABNF terms, reproduced here for clarity
+%import common.DIGIT
+%import common.HEXDIGIT
+%import common.LETTER

@@ -14,12 +14,7 @@ class TomlError(ValueError):
 
 
 class TomlDecodeError(TomlError):
-    def __init__(self, lineno, message):
-        self.lineno = lineno
-        self.message = message
-
-    def __str__(self):
-        return 'Line %d: %s' % (self.lineno, self.message)
+    pass
 
 
 class TomlEncodeError(TomlError):

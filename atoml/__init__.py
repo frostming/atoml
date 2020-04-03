@@ -8,8 +8,7 @@
     :license: BSD-2
 """
 # flake8: noqa
-from atoml.decoder import loads, load
-from atoml.encoder import dumps, dump
+from atoml.api import load, parse, loads, dump, dumps
 
 __author__ = 'Frost Ming'
-__version__ = '0.3.1dev'
+__version__ = '1.0.0-dev'
