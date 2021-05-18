@@ -16,7 +16,7 @@ You can also create new TOML documents from scratch using the provided helpers.
 
 The name comes from the famous Japanese cartoon character **鉄腕アトム(Atom)**.
 
-_**Implementation Change**: Start from 1.0, ATOML is a fork of [tomlkit](https://github.com/sdispater/tomlkit) with less bugs and inconsistency._
+_**Implementation Change**: Start from 1.0, ATOML is a fork of [tomlkit v0.7.0](https://github.com/sdispater/tomlkit) with less bugs and inconsistency._
 
 ## Usage
 
