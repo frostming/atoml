@@ -1,6 +1,7 @@
 import re
 import string
 
+from collections.abc import MutableMapping
 from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
@@ -877,7 +878,7 @@ class Array(Item, list):
         return self._value, self._trivia
 
 
-class Table(Item, dict):
+class Table(Item, MutableMapping, dict):
     """
     A table literal.
     """
@@ -901,7 +902,7 @@ class Table(Item, dict):
 
         for k, v in self._value.body:
             if k is not None:
-                super().__setitem__(k.key, v)
+                dict.__setitem__(self, k.key, v)
 
     @property
     def value(self) -> "container.Container":
@@ -935,7 +936,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -962,7 +963,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         return self
 
@@ -973,7 +974,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__delitem__(key)
+            dict.__delitem__(self, key)
 
         return self
 
@@ -1003,24 +1004,11 @@ class Table(Item, dict):
 
         return self
 
-    def keys(self) -> Iterator[str]:
-        yield from self._value.keys()
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value)
 
-    def values(self) -> Iterator[Item]:
-        yield from self._value.values()
-
-    def items(self) -> Iterator[Item]:
-        yield from self._value.items()
-
-    def update(self, other: dict) -> None:
-        for k, v in other.items():
-            self[k] = v
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        return self._value.get(key, default)
-
-    def __contains__(self, key: Union[Key, str]) -> bool:
-        return key in self._value
+    def __len__(self) -> int:
+        return len(self._value)
 
     def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
@@ -1032,7 +1020,7 @@ class Table(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super().__setitem__(key, value)
+            dict.__setitem__(self, key, value)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -1050,13 +1038,14 @@ class Table(Item, dict):
     def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
-    def __repr__(self):
-        return super().__repr__()
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
 
     def __str__(self):
         return str(self.value)
 
-    def _getstate(self, protocol=3):
+    def _getstate(self, protocol: int = 3) -> tuple:
         return (
             self._value,
             self._trivia,
@@ -1067,7 +1056,7 @@ class Table(Item, dict):
         )
 
 
-class InlineTable(Item, dict):
+class InlineTable(Item, MutableMapping, dict):
     """
     An inline table literal.
     """
@@ -1082,7 +1071,7 @@ class InlineTable(Item, dict):
 
         for k, v in self._value.body:
             if k is not None:
-                super().__setitem__(k.key, v)
+                dict.__setitem__(self, k.key, v)
 
     @property
     def discriminant(self) -> int:
@@ -1111,7 +1100,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         return self
 
@@ -1122,7 +1111,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__delitem__(key)
+            dict.__delitem__(self, key)
 
         return self
 
@@ -1158,25 +1147,6 @@ class InlineTable(Item, dict):
 
         return buf
 
-    def keys(self) -> Iterator[str]:
-        yield from self._value.keys()
-
-    def values(self) -> Iterator[Item]:
-        yield from self._value.values()
-
-    def items(self) -> Iterator[Item]:
-        yield from self._value.items()
-
-    def update(self, other: dict) -> None:
-        for k, v in other.items():
-            self[k] = v
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        return self._value.get(key, default)
-
-    def __contains__(self, key: Union[Key, str]) -> bool:
-        return key in self._value
-
     def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
 
@@ -1187,7 +1157,7 @@ class InlineTable(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super().__setitem__(key, value)
+            dict.__setitem__(self, key, value)
         if value.trivia.comment:
             value.trivia.comment = ""
 
@@ -1207,10 +1177,17 @@ class InlineTable(Item, dict):
     def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
-    def __repr__(self):
-        return super().__repr__()
+    def __len__(self) -> int:
+        return len(self._value)
 
-    def _getstate(self, protocol=3):
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value)
+
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
+
+    def _getstate(self, protocol: int = 3) -> tuple:
         return (self._value, self._trivia)
 
 
