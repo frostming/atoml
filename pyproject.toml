@@ -4,6 +4,7 @@
 test = [
     "pytest",
     "pytest-cov",
+    "pyyaml~=5.4",
 ]
 
 [build-system]
