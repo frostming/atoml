@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import re
 import string
 
-from typing import Any, Generator
+from typing import Any, Generator, List, Optional, Tuple, Type, Union
 
 from ._compat import decode
 from ._utils import RFC_3339_LOOSE, _escaped, parse_rfc3339
@@ -89,14 +87,14 @@ class Parser:
         """
         return self._src.extract()
 
-    def inc(self, exception: ParseError.__class__ | None = None) -> bool:
+    def inc(self, exception: Optional[Type[ParseError]] = None) -> bool:
         """
         Increments the parser if the end of the input has not been reached.
         Returns whether or not it was able to advance.
         """
         return self._src.inc(exception=exception)
 
-    def inc_n(self, n: int, exception: ParseError | None = None) -> bool:
+    def inc_n(self, n: int, exception: Optional[ParseError] = None) -> bool:
         """
         Increments the parser by n characters
         if the end of the input has not been reached.
@@ -263,7 +261,7 @@ class Parser:
         if current.strip():
             yield Key(current.strip(), t=t, sep="", original=current)
 
-    def _parse_item(self) -> tuple[Key | None, Item] | None:
+    def _parse_item(self) -> Optional[Tuple[Optional[Key], Item]]:
         """
         Attempts to parse the next item and returns it, along with its key
         if the item is value-like.
@@ -299,7 +297,7 @@ class Parser:
 
         return self._parse_key_value(True)
 
-    def _parse_comment_trail(self) -> tuple[str, str, str]:
+    def _parse_comment_trail(self) -> Tuple[str, str, str]:
         """
         Returns (comment_ws, comment, trail)
         If there is no comment, comment_ws and comment will
@@ -359,7 +357,7 @@ class Parser:
 
         return comment_ws, comment, trail
 
-    def _parse_key_value(self, parse_comment: bool = False) -> tuple[Key, Item]:
+    def _parse_key_value(self, parse_comment: bool = False) -> Tuple[Key, Item]:
         # Leading indent
         self.mark()
 
@@ -683,7 +681,7 @@ class Parser:
         # Consume opening bracket, EOF here is an issue (middle of array)
         self.inc(exception=UnexpectedEofError)
 
-        elems: list[Item] = []
+        elems: List[Item] = []
         prev_value = None
         while True:
             # consume whitespace
@@ -793,7 +791,7 @@ class Parser:
 
         return InlineTable(elems, Trivia())
 
-    def _parse_number(self, raw: str, trivia: Trivia) -> Item | None:
+    def _parse_number(self, raw: str, trivia: Trivia) -> Optional[Item]:
         # Leading zeros are not allowed
         sign = ""
         if raw.startswith(("+", "-")):
@@ -1000,8 +998,8 @@ class Parser:
                 self.inc(exception=UnexpectedEofError)
 
     def _parse_table(
-        self, parent_name: str | None = None, parent: Table | None = None
-    ) -> tuple[Key, Table | AoT]:
+        self, parent_name: Optional[str] = None, parent: Optional[Table] = None
+    ) -> Tuple[Key, Union[Table, AoT]]:
         """
         Parses a table element.
         """
@@ -1186,7 +1184,7 @@ class Parser:
 
         return key, result
 
-    def _peek_table(self) -> tuple[bool, str]:
+    def _peek_table(self) -> Tuple[bool, str]:
         """
         Peeks ahead non-intrusively by cloning then restoring the
         initial state of the parser.
@@ -1253,7 +1251,7 @@ class Parser:
                 break
             return buf
 
-    def _peek_unicode(self, is_long: bool) -> tuple[str | None, str | None]:
+    def _peek_unicode(self, is_long: bool) -> Tuple[Optional[str], Optional[str]]:
         """
         Peeks ahead non-intrusively by cloning then restoring the
         initial state of the parser.

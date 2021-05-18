@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import re
 import string
 
 from datetime import date, datetime, time
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Union
 
 from ._compat import PY38, decode
 from ._utils import escape_string
@@ -127,7 +125,7 @@ class StringType(Enum):
         return self in {StringType.MLB, StringType.MLL}
 
     @lru_cache(maxsize=None)
-    def toggle(self) -> StringType:
+    def toggle(self) -> "StringType":
         return {
             StringType.SLB: StringType.MLB,
             StringType.MLB: StringType.SLB,
@@ -197,10 +195,10 @@ class Key:
     def __init__(
         self,
         k: str,
-        t: KeyType | None = None,
-        sep: str | None = None,
+        t: Optional[KeyType] = None,
+        sep: Optional[str] = None,
         dotted: bool = False,
-        original: str | None = None,
+        original: Optional[str] = None,
     ) -> None:
         if t is None:
             if any(
@@ -239,7 +237,7 @@ class Key:
     def __hash__(self) -> int:
         return hash(self.key)
 
-    def __eq__(self, other: Key) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Key):
             return self.key == other.key
 
@@ -273,7 +271,7 @@ class Item:
 
     # Helpers
 
-    def comment(self, comment: str) -> Item:
+    def comment(self, comment: str) -> "Item":
         if not comment.strip().startswith("#"):
             comment = "# " + comment
 
@@ -282,7 +280,7 @@ class Item:
 
         return self
 
-    def indent(self, indent: int) -> Item:
+    def indent(self, indent: int) -> "Item":
         if self._trivia.indent.startswith("\n"):
             self._trivia.indent = "\n" + " " * indent
         else:
@@ -373,7 +371,7 @@ class Integer(int, Item):
     An integer literal.
     """
 
-    def __new__(cls, value: int, trivia: Trivia, raw: str) -> Integer:
+    def __new__(cls, value: int, trivia: Trivia, raw: str) -> "Integer":
         return super().__new__(cls, value)
 
     def __init__(self, _: int, trivia: Trivia, raw: str) -> None:
@@ -802,7 +800,7 @@ class Array(Item, list):
     def value(self) -> list:
         return self
 
-    def multiline(self, multiline: bool) -> Array:
+    def multiline(self, multiline: bool) -> "Array":
         self._multiline = multiline
 
         return self
@@ -834,7 +832,7 @@ class Array(Item, list):
 
         self._value.clear()
 
-    def __iadd__(self, other: list) -> Array:
+    def __iadd__(self, other: list) -> "Array":
         if not isinstance(other, list):
             return NotImplemented
 
@@ -890,8 +888,8 @@ class Table(Item, dict):
         trivia: Trivia,
         is_aot_element: bool,
         is_super_table: bool = False,
-        name: str | None = None,
-        display_name: str | None = None,
+        name: Optional[str] = None,
+        display_name: Optional[str] = None,
     ) -> None:
         super().__init__(trivia)
 
@@ -913,7 +911,7 @@ class Table(Item, dict):
     def discriminant(self) -> int:
         return 9
 
-    def add(self, key: Key | Item | str, item: Any = None) -> Item:
+    def add(self, key: Union[Key, Item, str], item: Any = None) -> Item:
         if item is None:
             if not isinstance(key, (Comment, Whitespace)):
                 raise ValueError(
@@ -924,7 +922,7 @@ class Table(Item, dict):
 
         return self.append(key, item)
 
-    def append(self, key: Key | str, _item: Any) -> Table:
+    def append(self, key: Union[Key, str], _item: Any) -> "Table":
         """
         Appends a (key, item) to the table.
         """
@@ -954,7 +952,7 @@ class Table(Item, dict):
 
         return self
 
-    def raw_append(self, key: Key | str, _item: Any) -> Table:
+    def raw_append(self, key: Union[Key, str], _item: Any) -> "Table":
         if not isinstance(_item, Item):
             _item = item(_item)
 
@@ -968,7 +966,7 @@ class Table(Item, dict):
 
         return self
 
-    def remove(self, key: Key | str) -> Table:
+    def remove(self, key: Union[Key, str]) -> "Table":
         self._value.remove(key)
 
         if isinstance(key, Key):
@@ -990,7 +988,7 @@ class Table(Item, dict):
 
     # Helpers
 
-    def indent(self, indent: int) -> Table:
+    def indent(self, indent: int) -> "Table":
         super().indent(indent)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
@@ -1018,16 +1016,16 @@ class Table(Item, dict):
         for k, v in other.items():
             self[k] = v
 
-    def get(self, key: Any, default: Any | None = None) -> Any:
+    def get(self, key: Any, default: Any = None) -> Any:
         return self._value.get(key, default)
 
-    def __contains__(self, key: Key | str) -> bool:
+    def __contains__(self, key: Union[Key, str]) -> bool:
         return key in self._value
 
-    def __getitem__(self, key: Key | str) -> Item:
+    def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
 
-    def __setitem__(self, key: Key | str, value: Any) -> None:
+    def __setitem__(self, key: Union[Key, str], value: Any) -> None:
         if not isinstance(value, Item):
             value = item(value)
 
@@ -1049,7 +1047,7 @@ class Table(Item, dict):
             else:
                 value.trivia.indent = m.group(1) + indent + m.group(2)
 
-    def __delitem__(self, key: Key | str) -> None:
+    def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
     def __repr__(self):
@@ -1094,7 +1092,7 @@ class InlineTable(Item, dict):
     def value(self) -> dict:
         return self._value
 
-    def append(self, key: Key | str, _item: Any) -> InlineTable:
+    def append(self, key: Union[Key, str], _item: Any) -> "InlineTable":
         """
         Appends a (key, item) to the table.
         """
@@ -1117,7 +1115,7 @@ class InlineTable(Item, dict):
 
         return self
 
-    def remove(self, key: Key | str) -> InlineTable:
+    def remove(self, key: Union[Key, str]) -> "InlineTable":
         self._value.remove(key)
 
         if isinstance(key, Key):
@@ -1173,16 +1171,16 @@ class InlineTable(Item, dict):
         for k, v in other.items():
             self[k] = v
 
-    def get(self, key: Any, default: Any | None = None) -> Any:
+    def get(self, key: Any, default: Any = None) -> Any:
         return self._value.get(key, default)
 
-    def __contains__(self, key: Key | str) -> bool:
+    def __contains__(self, key: Union[Key, str]) -> bool:
         return key in self._value
 
-    def __getitem__(self, key: Key | str) -> Item:
+    def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
 
-    def __setitem__(self, key: Key | str, value: Any) -> None:
+    def __setitem__(self, key: Union[Key, str], value: Any) -> None:
         if not isinstance(value, Item):
             value = item(value)
 
@@ -1206,7 +1204,7 @@ class InlineTable(Item, dict):
             else:
                 value.trivia.indent = m.group(1) + indent + m.group(2)
 
-    def __delitem__(self, key: Key | str) -> None:
+    def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
     def __repr__(self):
@@ -1264,7 +1262,7 @@ class AoT(Item, list):
     """
 
     def __init__(
-        self, body: list[Table], name: str | None = None, parsed: bool = False
+        self, body: List[Table], name: Optional[str] = None, parsed: bool = False
     ) -> None:
         self.name = name
         self._body = []
@@ -1276,7 +1274,7 @@ class AoT(Item, list):
             self.append(table)
 
     @property
-    def body(self) -> list[Table]:
+    def body(self) -> List[Table]:
         return self._body
 
     @property
@@ -1284,7 +1282,7 @@ class AoT(Item, list):
         return 12
 
     @property
-    def value(self) -> list[dict[Any, Any]]:
+    def value(self) -> List[Dict[Any, Any]]:
         return [v.value for v in self._body]
 
     def append(self, table: Table) -> Table:

@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from copy import copy
-from typing import Any
+from typing import Any, Optional, Tuple, Type
 
 from .exceptions import ParseError, UnexpectedCharError
 from .toml_char import TOMLChar
@@ -10,9 +8,9 @@ from .toml_char import TOMLChar
 class _State:
     def __init__(
         self,
-        source: Source,
-        save_marker: bool | None = False,
-        restore: bool | None = False,
+        source: "Source",
+        save_marker: Optional[str] = False,
+        restore: Optional[str] = False,
     ) -> None:
         self._source = source
         self._save_marker = save_marker
@@ -42,7 +40,7 @@ class _StateHandler:
     State preserver for the Parser.
     """
 
-    def __init__(self, source: Source) -> None:
+    def __init__(self, source: "Source") -> None:
         self._source = source
         self._states = []
 
@@ -105,7 +103,7 @@ class Source(str):
         """
         return self[self._marker : self._idx]
 
-    def inc(self, exception: type[ParseError] | None = None) -> bool:
+    def inc(self, exception: Optional[Type[ParseError]] = None) -> bool:
         """
         Increments the parser if the end of the input has not been reached.
         Returns whether or not it was able to advance.
@@ -160,7 +158,7 @@ class Source(str):
         self._marker = self._idx
 
     def parse_error(
-        self, exception: type[ParseError] = ParseError, *args: Any
+        self, exception: Type[ParseError] = ParseError, *args: Any
     ) -> ParseError:
         """
         Creates a generic "parse error" at the current position.
@@ -169,7 +167,7 @@ class Source(str):
 
         return exception(line, col, *args)
 
-    def _to_linecol(self) -> tuple[int, int]:
+    def _to_linecol(self) -> Tuple[int, int]:
         cur = 0
         for i, line in enumerate(self.splitlines()):
             if cur + len(line) + 1 > self.idx:

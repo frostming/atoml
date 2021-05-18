@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 import datetime as _datetime
+
+from typing import Tuple
 
 from ._utils import parse_rfc3339
 from .container import Container
@@ -122,7 +122,7 @@ def value(raw: str) -> _Item:
     return Parser(raw)._parse_value()
 
 
-def key_value(src: str) -> tuple[Key, _Item]:
+def key_value(src: str) -> Tuple[Key, _Item]:
     return Parser(src)._parse_key_value()
 
 
