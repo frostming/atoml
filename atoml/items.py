@@ -1,11 +1,11 @@
 import re
 import string
 
-from collections.abc import MutableMapping
+from collections.abc import MutableMapping, MutableSequence
 from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Optional, Union
 
 from ._compat import PY38, decode
 from ._utils import escape_string
@@ -778,20 +778,21 @@ class Time(Item, time):
         )
 
 
-class Array(Item, list):
+class Array(Item, MutableSequence, list):
     """
     An array literal
     """
 
     def __init__(self, value: list, trivia: Trivia, multiline: bool = False) -> None:
         super().__init__(trivia)
-
+        self._index_map: Dict[int, int] = {}
         list.__init__(
             self, [v.value for v in value if not isinstance(v, (Whitespace, Comment))]
         )
 
         self._value = value
         self._multiline = multiline
+        self._reindex()
 
     @property
     def discriminant(self) -> int:
@@ -819,60 +820,97 @@ class Array(Item, list):
 
         return s
 
-    def append(self, _item: Any) -> None:
-        if self._value:
-            self._value.append(Whitespace(", "))
+    def _reindex(self) -> None:
+        self._index_map.clear()
+        index = 0
+        for i, v in enumerate(self._value):
+            if isinstance(v, (Whitespace, Comment)):
+                continue
+            self._index_map[index] = i
+            index += 1
 
-        it = item(_item)
-        super().append(it.value)
-
-        self._value.append(it)
-
-    def clear(self):
-        super().clear()
+    def clear(self) -> None:
+        list.clear(self)
 
         self._value.clear()
+        self._index_map.clear()
 
-    def __iadd__(self, other: list) -> "Array":
-        if not isinstance(other, list):
-            return NotImplemented
+    def __len__(self) -> int:
+        return list.__len__(self)
 
-        for v in other:
-            self.append(v)
+    def __getitem__(self, key: Union[int, slice]) -> Any:
+        return list.__getitem__(self, key)
 
-        return self
+    def __setitem__(self, key: Union[int, slice], value: Any) -> Any:
+        it = item(value)
+        list.__setitem__(self, key, it.value)
+        if isinstance(key, slice):
+            raise ValueError("slice assignment is not supported")
+        if key < 0:
+            key += len(self)
+        self._value[self._index_map[key]] = it
 
-    def __delitem__(self, key):
-        super().__delitem__(key)
+    def insert(self, pos: int, value: Any) -> None:
+        it = item(value)
+        length = len(self)
+        if not isinstance(it, (Comment, Whitespace)):
+            list.insert(self, pos, it.value)
+        if pos < 0:
+            pos += length
 
-        j = 0 if key >= 0 else -1
-        for i, v in enumerate(self._value if key >= 0 else reversed(self._value)):
-            if key < 0:
-                i = -i - 1
+        if 0 <= pos < length:
+            try:
+                idx = self._index_map[pos]
+            except KeyError:
+                raise IndexError("list index out of range")
+        else:
+            idx = len(self._value) if pos >= length else pos
+        items = [it]
+        if self._value and idx < len(self._value):
+            items.append(Whitespace(", "))
+        elif (
+            self._value
+            and idx >= len(self._value)
+            and not (
+                isinstance(self._value[-1], Whitespace)
+                and self._value[-1].s.strip() == ","
+            )
+        ):
+            items.insert(0, Whitespace(", "))
+        self._value[idx:idx] = items
 
-            if isinstance(v, (Comment, Whitespace)):
-                continue
+        self._reindex()
 
-            if j == key:
-                del self._value[i]
+    def __delitem__(self, key: Union[int, slice]):
+        length = len(self)
+        list.__delitem__(self, key)
 
-                if i < 0 and abs(i) > len(self._value):
-                    i += 1
+        def get_indice_to_remove(idx: int) -> Iterable[int]:
+            try:
+                real_idx = self._index_map[idx]
+            except KeyError:
+                raise IndexError("list index out of range")
+            yield real_idx
+            for i in range(real_idx + 1, len(self._value)):
+                if isinstance(self._value[i], Whitespace):
+                    yield i
 
-                if i < len(self._value) - 1 and isinstance(self._value[i], Whitespace):
-                    del self._value[i]
-
-                break
-
-            j += 1 if key >= 0 else -1
+        indexes = set()
+        if isinstance(key, slice):
+            for idx in range(key.start or 0, key.end or length, key.step or 1):
+                indexes.update(get_indice_to_remove(idx))
+        else:
+            indexes.update(get_indice_to_remove(length + key if key < 0 else key))
+        for i in sorted(indexes, reverse=True):
+            del self._value[i]
+        while self._value and isinstance(self._value[-1], Whitespace):
+            self._value.pop()
+        self._reindex()
 
     def __str__(self):
         return str(
             [v.value for v in self._value if not isinstance(v, (Whitespace, Comment))]
         )
-
-    def __repr__(self):
-        return str(self)
 
     def _getstate(self, protocol=3):
         return self._value, self._trivia

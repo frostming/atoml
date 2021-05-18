@@ -153,7 +153,7 @@ def test_array_behaves_like_a_list():
     assert a == []
     assert a.as_string() == "[]"
 
-    content = """a = [1, 2] # Comment
+    content = """a = [1, 2,] # Comment
 """
     doc = parse(content)
 
@@ -162,7 +162,7 @@ def test_array_behaves_like_a_list():
     assert doc["a"] == [1, 2, 3, 4]
     assert (
         doc.as_string()
-        == """a = [1, 2, 3, 4] # Comment
+        == """a = [1, 2,3, 4] # Comment
 """
     )
 
