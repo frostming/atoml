@@ -5,6 +5,8 @@
 [![PyPI Version][pypi_version]](https://pypi.python.org/pypi/atoml/)
 [![Python Versions][python_versions]](https://pypi.python.org/pypi/atoml/)
 [![License][github_license]](https://github.com/frostming/atoml/blob/master/LICENSE)
+![Github Actions](https://github.com/frostming/atoml/workflows/Continuous%20Integration/badge.svg)
+[![codecov](https://codecov.io/gh/frostming/atoml/branch/main/graph/badge.svg?token=erZTquL5n0)](https://codecov.io/gh/frostming/atoml)
 
 # ATOML - Yet another style-preserving TOML library for Python
 
