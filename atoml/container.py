@@ -1,7 +1,6 @@
 import copy
 
-from ctypes import Union
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from ._compat import decode
 from ._utils import merge_dicts
@@ -495,14 +494,14 @@ class Container(dict):
 
     # Dictionary methods
 
-    def keys(self) -> Generator[str]:
+    def keys(self) -> Iterator[str]:
         return super().keys()
 
-    def values(self) -> Generator[Item]:
+    def values(self) -> Iterator[Item]:
         for k in self.keys():
             yield self[k]
 
-    def items(self) -> Generator[Item]:
+    def items(self) -> Iterator[Item]:
         for k, v in self.value.items():
             if k is None:
                 continue
@@ -745,7 +744,7 @@ class OutOfOrderTableProxy(dict):
     def values(self):
         return self._internal_container.values()
 
-    def items(self) -> Generator[Item]:
+    def items(self) -> Iterator[Item]:
         return self._internal_container.items()
 
     def update(self, other: dict) -> None:

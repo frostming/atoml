@@ -1,10 +1,10 @@
 import re
 import string
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
 
 from ._compat import PY38, decode
 from ._utils import escape_string
@@ -556,7 +556,7 @@ class DateTime(Item, datetime):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: Optional[datetime.tzinfo],
+        tzinfo: Optional[tzinfo],
         trivia: Trivia,
         raw: str,
         **kwargs: Any,
@@ -583,7 +583,7 @@ class DateTime(Item, datetime):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: Optional[datetime.tzinfo],
+        tzinfo: Optional[tzinfo],
         trivia: Trivia,
         raw: str,
     ) -> None:
@@ -735,7 +735,7 @@ class Time(Item, time):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: Optional[datetime.tzinfo],
+        tzinfo: Optional[tzinfo],
         *_: Any,
     ) -> time:
         return time.__new__(cls, hour, minute, second, microsecond, tzinfo)
@@ -746,7 +746,7 @@ class Time(Item, time):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: Optional[datetime.tzinfo],
+        tzinfo: Optional[tzinfo],
         trivia: Trivia,
         raw: str,
     ) -> None:
@@ -884,7 +884,7 @@ class Table(Item, dict):
 
     def __init__(
         self,
-        value: container.Container,
+        value: "container.Container",
         trivia: Trivia,
         is_aot_element: bool,
         is_super_table: bool = False,
@@ -904,7 +904,7 @@ class Table(Item, dict):
                 super().__setitem__(k.key, v)
 
     @property
-    def value(self) -> container.Container:
+    def value(self) -> "container.Container":
         return self._value
 
     @property
@@ -1003,13 +1003,13 @@ class Table(Item, dict):
 
         return self
 
-    def keys(self) -> Generator[str]:
+    def keys(self) -> Iterator[str]:
         yield from self._value.keys()
 
-    def values(self) -> Generator[Item]:
+    def values(self) -> Iterator[Item]:
         yield from self._value.values()
 
-    def items(self) -> Generator[Item]:
+    def items(self) -> Iterator[Item]:
         yield from self._value.items()
 
     def update(self, other: dict) -> None:
@@ -1073,7 +1073,7 @@ class InlineTable(Item, dict):
     """
 
     def __init__(
-        self, value: container.Container, trivia: Trivia, new: bool = False
+        self, value: "container.Container", trivia: Trivia, new: bool = False
     ) -> None:
         super().__init__(trivia)
 
@@ -1158,13 +1158,13 @@ class InlineTable(Item, dict):
 
         return buf
 
-    def keys(self) -> Generator[str]:
+    def keys(self) -> Iterator[str]:
         yield from self._value.keys()
 
-    def values(self) -> Generator[Item]:
+    def values(self) -> Iterator[Item]:
         yield from self._value.values()
 
-    def items(self) -> Generator[Item]:
+    def items(self) -> Iterator[Item]:
         yield from self._value.items()
 
     def update(self, other: dict) -> None:

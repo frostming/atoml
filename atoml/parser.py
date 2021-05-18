@@ -1,7 +1,7 @@
 import re
 import string
 
-from typing import Any, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, Iterator, List, Optional, Tuple, Type, Union
 
 from ._compat import decode
 from ._utils import RFC_3339_LOOSE, _escaped, parse_rfc3339
@@ -196,7 +196,7 @@ class Parser:
 
         return parent_parts == child_parts[: len(parent_parts)]
 
-    def _split_table_name(self, name: str) -> Generator[Key]:
+    def _split_table_name(self, name: str) -> Iterator[Key]:
         in_name = False
         current = ""
         t = KeyType.Bare
