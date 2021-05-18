@@ -36,7 +36,7 @@ RFC_3339_TIME = re.compile(
 _utc = timezone(timedelta(), "UTC")
 
 
-def parse_rfc3339(string):  # type: (str) -> Union[datetime, date, time]
+def parse_rfc3339(string: str) -> Union[datetime, date, time]:
     m = RFC_3339_DATETIME.match(string)
     if m:
         year = int(m.group(1))

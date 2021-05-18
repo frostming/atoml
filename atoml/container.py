@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import copy
 
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Generator
 
 from ._compat import decode
 from ._utils import merge_dicts
@@ -17,18 +19,18 @@ class Container(dict):
     A container for items within a TOMLDocument.
     """
 
-    def __init__(self, parsed=False):  # type: (bool) -> None
-        self._map = {}  # type: Dict[Key, int]
-        self._body = []  # type: List[Tuple[Optional[Key], Item]]
+    def __init__(self, parsed: bool = False) -> None:
+        self._map: dict[Key, int] = {}
+        self._body: list[tuple[Key | None, Item]] = []
         self._parsed = parsed
         self._table_keys = []
 
     @property
-    def body(self):  # type: () -> List[Tuple[Optional[Key], Item]]
+    def body(self) -> list[tuple[Key | None, Item]]:
         return self._body
 
     @property
-    def value(self):  # type: () -> Dict[Any, Any]
+    def value(self) -> dict[Any, Any]:
         d = {}
         for k, v in self._body:
             if k is None:
@@ -47,7 +49,7 @@ class Container(dict):
 
         return d
 
-    def parsing(self, parsing):  # type: (bool) -> None
+    def parsing(self, parsing: bool) -> None:
         self._parsed = parsing
 
         for _, v in self._body:
@@ -57,9 +59,7 @@ class Container(dict):
                 for t in v.body:
                     t.value.parsing(parsing)
 
-    def add(
-        self, key, item=None
-    ):  # type: (Union[Key, Item, str], Optional[Item]) -> Container
+    def add(self, key: Key | Item | str, item: Item | None = None) -> Container:
         """
         Adds an item to the current Container.
         """
@@ -73,7 +73,7 @@ class Container(dict):
 
         return self.append(key, item)
 
-    def append(self, key, item):  # type: (Union[Key, str, None], Item) -> Container
+    def append(self, key: Key | str | None, item: Item) -> Container:
         if not isinstance(key, Key) and key is not None:
             key = Key(key)
 
@@ -234,7 +234,7 @@ class Container(dict):
 
         return self
 
-    def remove(self, key):  # type: (Union[Key, str]) -> Container
+    def remove(self, key: Key | str) -> Container:
         if not isinstance(key, Key):
             key = Key(key)
 
@@ -253,8 +253,8 @@ class Container(dict):
         return self
 
     def _insert_after(
-        self, key, other_key, item
-    ):  # type: (Union[str, Key], Union[str, Key], Union[Item, Any]) -> Container
+        self, key: str | Key, other_key: str | Key, item: Item | Any
+    ) -> Container:
         if key is None:
             raise ValueError("Key cannot be null in insert_after()")
 
@@ -299,9 +299,7 @@ class Container(dict):
 
         return self
 
-    def _insert_at(
-        self, idx, key, item
-    ):  # type: (int, Union[str, Key], Union[Item, Any]) -> Container
+    def _insert_at(self, idx: int, key: str | Key, item: Item | Any) -> Container:
         if idx > len(self._body) - 1:
             raise ValueError(f"Unable to insert at position {idx}")
 
@@ -341,7 +339,7 @@ class Container(dict):
 
         return self
 
-    def item(self, key):  # type: (Union[Key, str]) -> Item
+    def item(self, key: Key | str) -> Item:
         if not isinstance(key, Key):
             key = Key(key)
 
@@ -357,11 +355,11 @@ class Container(dict):
 
         return self._body[idx][1]
 
-    def last_item(self):  # type: () -> Optional[Item]
+    def last_item(self) -> Item | None:
         if self._body:
             return self._body[-1][1]
 
-    def as_string(self):  # type: () -> str
+    def as_string(self) -> str:
         s = ""
         for k, v in self._body:
             if k is not None:
@@ -496,25 +494,25 @@ class Container(dict):
 
     # Dictionary methods
 
-    def keys(self):  # type: () -> Generator[str]
+    def keys(self) -> Generator[str]:
         return super().keys()
 
-    def values(self):  # type: () -> Generator[Item]
+    def values(self) -> Generator[Item]:
         for k in self.keys():
             yield self[k]
 
-    def items(self):  # type: () -> Generator[Item]
+    def items(self) -> Generator[Item]:
         for k, v in self.value.items():
             if k is None:
                 continue
 
             yield k, v
 
-    def update(self, other):  # type: (Dict) -> None
+    def update(self, other: dict) -> None:
         for k, v in other.items():
             self[k] = v
 
-    def get(self, key, default=None):  # type: (Any, Optional[Any]) -> Any
+    def get(self, key: Any, default: Any | None = None) -> Any:
         if not isinstance(key, Key):
             key = Key(key)
 
@@ -536,21 +534,19 @@ class Container(dict):
 
         return value
 
-    def setdefault(
-        self, key, default=None
-    ):  # type: (Union[Key, str], Any) -> Union[Item, Container]
+    def setdefault(self, key: Key | str, default: Any = None) -> Item | Container:
         if key not in self:
             self[key] = default
 
         return self[key]
 
-    def __contains__(self, key):  # type: (Union[Key, str]) -> bool
+    def __contains__(self, key: Key | str) -> bool:
         if not isinstance(key, Key):
             key = Key(key)
 
         return key in self._map
 
-    def __getitem__(self, key):  # type: (Union[Key, str]) -> Union[Item, Container]
+    def __getitem__(self, key: Key | str) -> Item | Container:
         if not isinstance(key, Key):
             key = Key(key)
 
@@ -570,18 +566,16 @@ class Container(dict):
 
         return item
 
-    def __setitem__(self, key, value):  # type: (Union[Key, str], Any) -> None
+    def __setitem__(self, key: Key | str, value: Any) -> None:
         if key is not None and key in self:
             self._replace(key, key, value)
         else:
             self.append(key, value)
 
-    def __delitem__(self, key):  # type: (Union[Key, str]) -> None
+    def __delitem__(self, key: Key | str) -> None:
         self.remove(key)
 
-    def _replace(
-        self, key, new_key, value
-    ):  # type: (Union[Key, str], Union[Key, str], Item) -> None
+    def _replace(self, key: Key | str, new_key: Key | str, value: Item) -> None:
         if not isinstance(key, Key):
             key = Key(key)
 
@@ -595,8 +589,8 @@ class Container(dict):
         self._replace_at(idx, new_key, value)
 
     def _replace_at(
-        self, idx, new_key, value
-    ):  # type: (Union[int, Tuple[int]], Union[Key, str], Item) -> None
+        self, idx: int | tuple[int], new_key: Key | str, value: Item
+    ) -> None:
         if not isinstance(new_key, Key):
             new_key = Key(new_key)
 
@@ -632,13 +626,13 @@ class Container(dict):
 
         super().__setitem__(new_key.key, value.value)
 
-    def __str__(self):  # type: () -> str
+    def __str__(self) -> str:
         return str(self.value)
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return super().__repr__()
 
-    def __eq__(self, other):  # type: (Dict) -> bool
+    def __eq__(self, other: dict) -> bool:
         if not isinstance(other, dict):
             return NotImplemented
 
@@ -662,10 +656,10 @@ class Container(dict):
         self._body = state[1]
         self._parsed = state[2]
 
-    def copy(self):  # type: () -> Container
+    def copy(self) -> Container:
         return copy.copy(self)
 
-    def __copy__(self):  # type: () -> Container
+    def __copy__(self) -> Container:
         c = self.__class__(self._parsed)
         for k, v in super().copy().items():
             super(Container, c).__setitem__(k, v)
@@ -677,7 +671,7 @@ class Container(dict):
 
 
 class OutOfOrderTableProxy(dict):
-    def __init__(self, container, indices):  # type: (Container, Tuple) -> None
+    def __init__(self, container: Container, indices: tuple) -> None:
         self._container = container
         self._internal_container = Container(self._container.parsing)
         self._tables = []
@@ -705,13 +699,13 @@ class OutOfOrderTableProxy(dict):
     def value(self):
         return self._internal_container.value
 
-    def __getitem__(self, key):  # type: (Union[Key, str]) -> Any
+    def __getitem__(self, key: Key | str) -> Any:
         if key not in self._internal_container:
             raise NonExistentKey(key)
 
         return self._internal_container[key]
 
-    def __setitem__(self, key, item):  # type: (Union[Key, str], Any) -> None
+    def __setitem__(self, key: Key | str, item: Any) -> None:
         if key in self._map:
             idx = self._map[key]
             self._container._replace_at(idx, key, item)
@@ -727,7 +721,7 @@ class OutOfOrderTableProxy(dict):
         if key is not None:
             super().__setitem__(key, item)
 
-    def __delitem__(self, key):  # type: (Union[Key, str]) -> None
+    def __delitem__(self, key: Key | str) -> None:
         if key in self._map:
             del self._container[key]
             del self._map[key]
@@ -746,21 +740,19 @@ class OutOfOrderTableProxy(dict):
     def values(self):
         return self._internal_container.values()
 
-    def items(self):  # type: () -> Generator[Item]
+    def items(self) -> Generator[Item]:
         return self._internal_container.items()
 
-    def update(self, other):  # type: (Dict) -> None
+    def update(self, other: dict) -> None:
         self._internal_container.update(other)
 
-    def get(self, key, default=None):  # type: (Any, Optional[Any]) -> Any
+    def get(self, key: Any, default: Any | None = None) -> Any:
         return self._internal_container.get(key, default=default)
 
     def pop(self, key, default=_NOT_SET):
         return self._internal_container.pop(key, default=default)
 
-    def setdefault(
-        self, key, default=None
-    ):  # type: (Union[Key, str], Any) -> Union[Item, Container]
+    def setdefault(self, key: Key | str, default: Any = None) -> Item | Container:
         return self._internal_container.setdefault(key, default=default)
 
     def __contains__(self, key):
@@ -772,7 +764,7 @@ class OutOfOrderTableProxy(dict):
     def __repr__(self):
         return repr(self._internal_container)
 
-    def __eq__(self, other):  # type: (Dict) -> bool
+    def __eq__(self, other: dict) -> bool:
         if not isinstance(other, dict):
             return NotImplemented
 

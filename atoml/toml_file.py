@@ -7,13 +7,13 @@ class TOMLFile:
     Represents a TOML file.
     """
 
-    def __init__(self, path):  # type: (str) -> None
+    def __init__(self, path: str) -> None:
         self._path = path
 
-    def read(self):  # type: () -> TOMLDocument
+    def read(self) -> TOMLDocument:
         with open(self._path, encoding="utf-8") as f:
             return loads(f.read())
 
-    def write(self, data):  # type: (TOMLDocument) -> None
+    def write(self, data: TOMLDocument) -> None:
         with open(self._path, "w", encoding="utf-8") as f:
             f.write(data.as_string())

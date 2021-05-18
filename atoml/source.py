@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Any, Optional, Tuple, Type
+from typing import Any
 
 from .exceptions import ParseError, UnexpectedCharError
 from .toml_char import TOMLChar
@@ -18,7 +18,7 @@ class _State:
         self._save_marker = save_marker
         self.restore = restore
 
-    def __enter__(self):  # type: () -> None
+    def __enter__(self) -> None:
         # Entering this context manager - save the state
         self._chars = copy(self._source._chars)
         self._idx = self._source._idx
@@ -42,14 +42,14 @@ class _StateHandler:
     State preserver for the Parser.
     """
 
-    def __init__(self, source):  # type: (Source) -> None
+    def __init__(self, source: Source) -> None:
         self._source = source
         self._states = []
 
     def __call__(self, *args, **kwargs):
         return _State(self._source, *args, **kwargs)
 
-    def __enter__(self):  # type: () -> None
+    def __enter__(self) -> None:
         state = self()
         self._states.append(state)
         return state.__enter__()
@@ -62,7 +62,7 @@ class _StateHandler:
 class Source(str):
     EOF = TOMLChar("\0")
 
-    def __init__(self, _):  # type: (str) -> None
+    def __init__(self, _: str) -> None:
         super().__init__()
 
         # Collection of TOMLChars
@@ -84,28 +84,28 @@ class Source(str):
         self.mark()
 
     @property
-    def state(self):  # type: () -> _StateHandler
+    def state(self) -> _StateHandler:
         return self._state
 
     @property
-    def idx(self):  # type: () -> int
+    def idx(self) -> int:
         return self._idx
 
     @property
-    def current(self):  # type: () -> TOMLChar
+    def current(self) -> TOMLChar:
         return self._current
 
     @property
-    def marker(self):  # type: () -> int
+    def marker(self) -> int:
         return self._marker
 
-    def extract(self):  # type: () -> str
+    def extract(self) -> str:
         """
         Extracts the value between marker and index
         """
         return self[self._marker : self._idx]
 
-    def inc(self, exception=None):  # type: (Optional[Type[ParseError]]) -> bool
+    def inc(self, exception: type[ParseError] | None = None) -> bool:
         """
         Increments the parser if the end of the input has not been reached.
         Returns whether or not it was able to advance.
@@ -122,7 +122,7 @@ class Source(str):
 
             return False
 
-    def inc_n(self, n, exception=None):  # type: (int, Exception) -> bool
+    def inc_n(self, n: int, exception: Exception = None) -> bool:
         """
         Increments the parser by n characters
         if the end of the input has not been reached.
@@ -147,21 +147,21 @@ class Source(str):
         if min > 0:
             self.parse_error(UnexpectedCharError)
 
-    def end(self):  # type: () -> bool
+    def end(self) -> bool:
         """
         Returns True if the parser has reached the end of the input.
         """
         return self._current is self.EOF
 
-    def mark(self):  # type: () -> None
+    def mark(self) -> None:
         """
         Sets the marker to the index's current position
         """
         self._marker = self._idx
 
     def parse_error(
-        self, exception=ParseError, *args
-    ):  # type: (Type[ParseError], Any) -> ParseError
+        self, exception: type[ParseError] = ParseError, *args: Any
+    ) -> ParseError:
         """
         Creates a generic "parse error" at the current position.
         """
@@ -169,7 +169,7 @@ class Source(str):
 
         return exception(line, col, *args)
 
-    def _to_linecol(self):  # type: () -> Tuple[int, int]
+    def _to_linecol(self) -> tuple[int, int]:
         cur = 0
         for i, line in enumerate(self.splitlines()):
             if cur + len(line) + 1 > self.idx:

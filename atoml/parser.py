@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import re
 import string
 
-from typing import Any, Generator, List, Optional, Tuple, Union
+from typing import Any, Generator
 
 from ._compat import decode
 from ._utils import RFC_3339_LOOSE, _escaped, parse_rfc3339
@@ -81,20 +83,20 @@ class Parser:
     def _marker(self):
         return self._src.marker
 
-    def extract(self):  # type: () -> str
+    def extract(self) -> str:
         """
         Extracts the value between marker and index
         """
         return self._src.extract()
 
-    def inc(self, exception=None):  # type: (Optional[ParseError.__class__]) -> bool
+    def inc(self, exception: ParseError.__class__ | None = None) -> bool:
         """
         Increments the parser if the end of the input has not been reached.
         Returns whether or not it was able to advance.
         """
         return self._src.inc(exception=exception)
 
-    def inc_n(self, n, exception=None):  # type: (int, Optional[ParseError]) -> bool
+    def inc_n(self, n: int, exception: ParseError | None = None) -> bool:
         """
         Increments the parser by n characters
         if the end of the input has not been reached.
@@ -107,13 +109,13 @@ class Parser:
         """
         return self._src.consume(chars=chars, min=min, max=max)
 
-    def end(self):  # type: () -> bool
+    def end(self) -> bool:
         """
         Returns True if the parser has reached the end of the input.
         """
         return self._src.end()
 
-    def mark(self):  # type: () -> None
+    def mark(self) -> None:
         """
         Sets the marker to the index's current position
         """
@@ -125,7 +127,7 @@ class Parser:
         """
         return self._src.parse_error(exception, *args)
 
-    def parse(self):  # type: () -> TOMLDocument
+    def parse(self) -> TOMLDocument:
         body = TOMLDocument(True)
 
         # Take all keyvals outside of tables/AoT's.
@@ -161,7 +163,7 @@ class Parser:
 
         return body
 
-    def _merge_ws(self, item, container):  # type: (Item, Container) -> bool
+    def _merge_ws(self, item: Item, container: Container) -> bool:
         """
         Merges the given Item with the last one currently in the given Container if
         both are whitespace items.
@@ -183,7 +185,7 @@ class Parser:
 
         return True
 
-    def _is_child(self, parent, child):  # type: (str, str) -> bool
+    def _is_child(self, parent: str, child: str) -> bool:
         """
         Returns whether a key is strictly a child of another key.
         AoT siblings are not considered children of one another.
@@ -196,7 +198,7 @@ class Parser:
 
         return parent_parts == child_parts[: len(parent_parts)]
 
-    def _split_table_name(self, name):  # type: (str) -> Generator[Key]
+    def _split_table_name(self, name: str) -> Generator[Key]:
         in_name = False
         current = ""
         t = KeyType.Bare
@@ -261,7 +263,7 @@ class Parser:
         if current.strip():
             yield Key(current.strip(), t=t, sep="", original=current)
 
-    def _parse_item(self):  # type: () -> Optional[Tuple[Optional[Key], Item]]
+    def _parse_item(self) -> tuple[Key | None, Item] | None:
         """
         Attempts to parse the next item and returns it, along with its key
         if the item is value-like.
@@ -297,7 +299,7 @@ class Parser:
 
         return self._parse_key_value(True)
 
-    def _parse_comment_trail(self):  # type: () -> Tuple[str, str, str]
+    def _parse_comment_trail(self) -> tuple[str, str, str]:
         """
         Returns (comment_ws, comment, trail)
         If there is no comment, comment_ws and comment will
@@ -357,7 +359,7 @@ class Parser:
 
         return comment_ws, comment, trail
 
-    def _parse_key_value(self, parse_comment=False):  # type: (bool) -> (Key, Item)
+    def _parse_key_value(self, parse_comment: bool = False) -> tuple[Key, Item]:
         # Leading indent
         self.mark()
 
@@ -403,7 +405,7 @@ class Parser:
 
         return key, val
 
-    def _parse_key(self):  # type: () -> Key
+    def _parse_key(self) -> Key:
         """
         Parses a Key at the current position;
         WS before the key must be exhausted first at the callsite.
@@ -413,7 +415,7 @@ class Parser:
         else:
             return self._parse_bare_key()
 
-    def _parse_quoted_key(self):  # type: () -> Key
+    def _parse_quoted_key(self) -> Key:
         """
         Parses a key enclosed in either single or double quotes.
         """
@@ -446,7 +448,7 @@ class Parser:
 
         return Key(key, key_type, "", dotted)
 
-    def _parse_bare_key(self):  # type: () -> Key
+    def _parse_bare_key(self) -> Key:
         """
         Parses a bare key.
         """
@@ -479,8 +481,8 @@ class Parser:
         return Key(key, key_type, "", dotted, original=original)
 
     def _handle_dotted_key(
-        self, container, key, value
-    ):  # type: (Union[Container, Table], Key, Any) -> None
+        self, container: Container | Table, key: Key, value: Any
+    ) -> None:
         names = tuple(self._split_table_name(key.as_string()))
         name = names[0]
         name._dotted = True
@@ -541,7 +543,7 @@ class Parser:
 
                     table = table[_name]
 
-    def _parse_value(self):  # type: () -> Item
+    def _parse_value(self) -> Item:
         """
         Attempts to parse a value at the current position.
         """
@@ -666,7 +668,7 @@ class Parser:
     def _parse_false(self):
         return self._parse_bool(BoolType.FALSE)
 
-    def _parse_bool(self, style):  # type: (BoolType) -> Bool
+    def _parse_bool(self, style: BoolType) -> Bool:
         with self._state:
             style = BoolType(style)
 
@@ -677,11 +679,11 @@ class Parser:
 
             return Bool(style, Trivia())
 
-    def _parse_array(self):  # type: () -> Array
+    def _parse_array(self) -> Array:
         # Consume opening bracket, EOF here is an issue (middle of array)
         self.inc(exception=UnexpectedEofError)
 
-        elems = []  # type: List[Item]
+        elems: list[Item] = []
         prev_value = None
         while True:
             # consume whitespace
@@ -735,7 +737,7 @@ class Parser:
         else:
             return res
 
-    def _parse_inline_table(self):  # type: () -> InlineTable
+    def _parse_inline_table(self) -> InlineTable:
         # consume opening bracket, EOF here is an issue (middle of array)
         self.inc(exception=UnexpectedEofError)
 
@@ -791,7 +793,7 @@ class Parser:
 
         return InlineTable(elems, Trivia())
 
-    def _parse_number(self, raw, trivia):  # type: (str, Trivia) -> Optional[Item]
+    def _parse_number(self, raw: str, trivia: Trivia) -> Item | None:
         # Leading zeros are not allowed
         sign = ""
         if raw.startswith(("+", "-")):
@@ -837,11 +839,11 @@ class Parser:
             except ValueError:
                 return
 
-    def _parse_literal_string(self):  # type: () -> String
+    def _parse_literal_string(self) -> String:
         with self._state:
             return self._parse_string(StringType.SLL)
 
-    def _parse_basic_string(self):  # type: () -> String
+    def _parse_basic_string(self) -> String:
         with self._state:
             return self._parse_string(StringType.SLB)
 
@@ -890,7 +892,7 @@ class Parser:
 
         raise self.parse_error(InvalidCharInStringError, self._current)
 
-    def _parse_string(self, delim):  # type: (StringType) -> String
+    def _parse_string(self, delim: StringType) -> String:
         # only keep parsing for string if the current character matches the delim
         if self._current != delim.unit:
             raise self.parse_error(
@@ -998,8 +1000,8 @@ class Parser:
                 self.inc(exception=UnexpectedEofError)
 
     def _parse_table(
-        self, parent_name=None, parent=None
-    ):  # type: (Optional[str], Optional[Table]) -> Tuple[Key, Union[Table, AoT]]
+        self, parent_name: str | None = None, parent: Table | None = None
+    ) -> tuple[Key, Table | AoT]:
         """
         Parses a table element.
         """
@@ -1184,7 +1186,7 @@ class Parser:
 
         return key, result
 
-    def _peek_table(self):  # type: () -> Tuple[bool, str]
+    def _peek_table(self) -> tuple[bool, str]:
         """
         Peeks ahead non-intrusively by cloning then restoring the
         initial state of the parser.
@@ -1214,7 +1216,7 @@ class Parser:
 
             return is_aot, table_name
 
-    def _parse_aot(self, first, name_first):  # type: (Table, str) -> AoT
+    def _parse_aot(self, first: Table, name_first: str) -> AoT:
         """
         Parses all siblings of the provided table first and bundles them into
         an AoT.
@@ -1233,7 +1235,7 @@ class Parser:
 
         return AoT(payload, parsed=True)
 
-    def _peek(self, n):  # type: (int) -> str
+    def _peek(self, n: int) -> str:
         """
         Peeks ahead n characters.
 
@@ -1251,9 +1253,7 @@ class Parser:
                 break
             return buf
 
-    def _peek_unicode(
-        self, is_long
-    ):  # type: (bool) -> Tuple[Optional[str], Optional[str]]
+    def _peek_unicode(self, is_long: bool) -> tuple[str | None, str | None]:
         """
         Peeks ahead non-intrusively by cloning then restoring the
         initial state of the parser.

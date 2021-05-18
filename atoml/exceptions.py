@@ -13,9 +13,7 @@ class ParseError(ValueError, ATOMLError):
     location within the line where the error was encountered.
     """
 
-    def __init__(
-        self, line, col, message=None
-    ):  # type: (int, int, Optional[str]) -> None
+    def __init__(self, line: int, col: int, message: Optional[str] = None) -> None:
         self._line = line
         self._col = col
 
@@ -38,7 +36,7 @@ class MixedArrayTypesError(ParseError):
     An array was found that had two or more element types.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Mixed types found in array"
 
         super().__init__(line, col, message=message)
@@ -49,7 +47,7 @@ class InvalidNumberError(ParseError):
     A numeric field was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid number"
 
         super().__init__(line, col, message=message)
@@ -60,7 +58,7 @@ class InvalidDateTimeError(ParseError):
     A datetime field was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid datetime"
 
         super().__init__(line, col, message=message)
@@ -71,7 +69,7 @@ class InvalidDateError(ParseError):
     A date field was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid date"
 
         super().__init__(line, col, message=message)
@@ -82,7 +80,7 @@ class InvalidTimeError(ParseError):
     A date field was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid time"
 
         super().__init__(line, col, message=message)
@@ -93,7 +91,7 @@ class InvalidNumberOrDateError(ParseError):
     A numeric or date field was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid number or date format"
 
         super().__init__(line, col, message=message)
@@ -104,7 +102,7 @@ class InvalidUnicodeValueError(ParseError):
     A unicode code was improperly specified.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Invalid unicode value"
 
         super().__init__(line, col, message=message)
@@ -115,7 +113,7 @@ class UnexpectedCharError(ParseError):
     An unexpected character was found during parsing.
     """
 
-    def __init__(self, line, col, char):  # type: (int, int, str) -> None
+    def __init__(self, line: int, col: int, char: str) -> None:
         message = f"Unexpected character: {repr(char)}"
 
         super().__init__(line, col, message=message)
@@ -126,7 +124,7 @@ class EmptyKeyError(ParseError):
     An empty key was found during parsing.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Empty key"
 
         super().__init__(line, col, message=message)
@@ -137,7 +135,7 @@ class EmptyTableNameError(ParseError):
     An empty table name was found during parsing.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Empty table name"
 
         super().__init__(line, col, message=message)
@@ -148,7 +146,7 @@ class InvalidCharInStringError(ParseError):
     The string being parsed contains an invalid character.
     """
 
-    def __init__(self, line, col, char):  # type: (int, int, str) -> None
+    def __init__(self, line: int, col: int, char: str) -> None:
         message = f"Invalid character {repr(char)} in string"
 
         super().__init__(line, col, message=message)
@@ -159,7 +157,7 @@ class UnexpectedEofError(ParseError):
     The TOML being parsed ended before the end of a statement.
     """
 
-    def __init__(self, line, col):  # type: (int, int) -> None
+    def __init__(self, line: int, col: int) -> None:
         message = "Unexpected end of file"
 
         super().__init__(line, col, message=message)
@@ -170,9 +168,7 @@ class InternalParserError(ParseError):
     An error that indicates a bug in the parser.
     """
 
-    def __init__(
-        self, line, col, message=None
-    ):  # type: (int, int, Optional[str]) -> None
+    def __init__(self, line: int, col: int, message: Optional[str] = None) -> None:
         msg = "Internal parser error"
         if message:
             msg += f" ({message})"
@@ -203,7 +199,7 @@ class KeyAlreadyPresent(ATOMLError):
 
 
 class InvalidControlChar(ParseError):
-    def __init__(self, line, col, char, type):  # type: (int, int, int, str) -> None
+    def __init__(self, line: int, col: int, char: int, type: str) -> None:
         display_code = "\\u00"
 
         if char < 16:
