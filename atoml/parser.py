@@ -479,7 +479,7 @@ class Parser:
         return Key(key, key_type, "", dotted, original=original)
 
     def _handle_dotted_key(
-        self, container: Container | Table, key: Key, value: Any
+        self, container: Union[Container, Table], key: Key, value: Any
     ) -> None:
         names = tuple(self._split_table_name(key.as_string()))
         name = names[0]
