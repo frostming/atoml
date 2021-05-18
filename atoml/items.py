@@ -556,7 +556,7 @@ class DateTime(Item, datetime):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: datetime.tzinfo | None,
+        tzinfo: Optional[datetime.tzinfo],
         trivia: Trivia,
         raw: str,
         **kwargs: Any,
@@ -583,7 +583,7 @@ class DateTime(Item, datetime):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: datetime.tzinfo | None,
+        tzinfo: Optional[datetime.tzinfo],
         trivia: Trivia,
         raw: str,
     ) -> None:
@@ -735,7 +735,7 @@ class Time(Item, time):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: datetime.tzinfo | None,
+        tzinfo: Optional[datetime.tzinfo],
         *_: Any,
     ) -> time:
         return time.__new__(cls, hour, minute, second, microsecond, tzinfo)
@@ -746,7 +746,7 @@ class Time(Item, time):
         minute: int,
         second: int,
         microsecond: int,
-        tzinfo: datetime.tzinfo | None,
+        tzinfo: Optional[datetime.tzinfo],
         trivia: Trivia,
         raw: str,
     ) -> None:
