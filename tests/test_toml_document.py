@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import copy
 import json
 import pickle
@@ -9,11 +6,11 @@ from datetime import datetime
 
 import pytest
 
-import tomlkit
+import atoml
 
-from tomlkit import parse
-from tomlkit._utils import _utc
-from tomlkit.exceptions import NonExistentKey
+from atoml import parse
+from atoml._utils import _utc
+from atoml.exceptions import NonExistentKey
 
 
 def test_document_is_a_dict(example):
@@ -433,14 +430,14 @@ name = "foo"
     doc = parse(content)
     poetry_section = doc["tool"]["poetry"]
     dependencies = poetry_section["dependencies"]
-    dependencies["foo"] = tomlkit.inline_table()
+    dependencies["foo"] = atoml.inline_table()
     dependencies["foo"]["version"] = "^2.0"
     dependencies["foo"]["source"] = "local"
-    dependencies["bar"] = tomlkit.inline_table()
+    dependencies["bar"] = atoml.inline_table()
     dependencies["bar"]["version"] = "^3.0"
     dependencies["bar"]["source"] = "remote"
     dev_dependencies = poetry_section["dev-dependencies"]
-    dev_dependencies["baz"] = tomlkit.inline_table()
+    dev_dependencies["baz"] = atoml.inline_table()
     dev_dependencies["baz"]["version"] = "^4.0"
     dev_dependencies["baz"]["source"] = "other"
 
@@ -593,7 +590,7 @@ a = "b"
 """
 
     doc = parse(content)
-    constraint = tomlkit.inline_table()
+    constraint = atoml.inline_table()
     constraint["version"] = "^1.0"
     doc["tool"]["poetry"]["dependencies"]["bar"] = constraint
 

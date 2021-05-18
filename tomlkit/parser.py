@@ -1,55 +1,47 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import re
 import string
 
-from typing import Any
-from typing import Generator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, Generator, List, Optional, Tuple, Union
 
-from ._compat import chr
 from ._compat import decode
-from ._utils import RFC_3339_LOOSE
-from ._utils import _escaped
-from ._utils import parse_rfc3339
+from ._utils import RFC_3339_LOOSE, _escaped, parse_rfc3339
 from .container import Container
-from .exceptions import EmptyKeyError
-from .exceptions import EmptyTableNameError
-from .exceptions import InternalParserError
-from .exceptions import InvalidCharInStringError
-from .exceptions import InvalidControlChar
-from .exceptions import InvalidDateError
-from .exceptions import InvalidDateTimeError
-from .exceptions import InvalidNumberError
-from .exceptions import InvalidTimeError
-from .exceptions import InvalidUnicodeValueError
-from .exceptions import ParseError
-from .exceptions import UnexpectedCharError
-from .exceptions import UnexpectedEofError
-from .items import AoT
-from .items import Array
-from .items import Bool
-from .items import BoolType
-from .items import Comment
-from .items import Date
-from .items import DateTime
-from .items import Float
-from .items import InlineTable
-from .items import Integer
-from .items import Item
-from .items import Key
-from .items import KeyType
-from .items import Null
-from .items import String
-from .items import StringType
-from .items import Table
-from .items import Time
-from .items import Trivia
-from .items import Whitespace
+from .exceptions import (
+    EmptyTableNameError,
+    InternalParserError,
+    InvalidCharInStringError,
+    InvalidControlChar,
+    InvalidDateError,
+    InvalidDateTimeError,
+    InvalidNumberError,
+    InvalidTimeError,
+    InvalidUnicodeValueError,
+    ParseError,
+    UnexpectedCharError,
+    UnexpectedEofError,
+)
+from .items import (
+    AoT,
+    Array,
+    Bool,
+    BoolType,
+    Comment,
+    Date,
+    DateTime,
+    Float,
+    InlineTable,
+    Integer,
+    Item,
+    Key,
+    KeyType,
+    Null,
+    String,
+    StringType,
+    Table,
+    Time,
+    Trivia,
+    Whitespace,
+)
 from .source import Source
 from .toml_char import TOMLChar
 from .toml_document import TOMLDocument
@@ -67,7 +59,7 @@ class Parser:
     Parser for TOML documents.
     """
 
-    def __init__(self, string):  # type: (str) -> None
+    def __init__(self, string: str) -> None:
         # Input to parse
         self._src = Source(decode(string))
 
@@ -475,7 +467,7 @@ class Parser:
 
         if " " in key:
             # Bare key with spaces in it
-            raise self.parse_error(ParseError, 'Invalid key "{}"'.format(key))
+            raise self.parse_error(ParseError, f'Invalid key "{key}"')
 
         if self._current == ".":
             self.inc()
@@ -829,7 +821,7 @@ class Parser:
             base = 16
 
         # Underscores should be surrounded by digits
-        clean = re.sub("(?i)(?<={})_(?={})".format(digits, digits), "", raw)
+        clean = re.sub(f"(?i)(?<={digits})_(?={digits})", "", raw)
 
         if "_" in clean:
             return
@@ -903,7 +895,7 @@ class Parser:
         if self._current != delim.unit:
             raise self.parse_error(
                 InternalParserError,
-                "Invalid character for string type {}".format(delim),
+                f"Invalid character for string type {delim}",
             )
 
         # consume the opening/first delim, EOF here is an issue
@@ -1075,7 +1067,7 @@ class Parser:
         key = Key(name, sep="")
         name_parts = tuple(self._split_table_name(name))
         if any(" " in part.key.strip() and part.is_bare() for part in name_parts):
-            raise self.parse_error(ParseError, 'Invalid table name "{}"'.format(name))
+            raise self.parse_error(ParseError, f'Invalid table name "{name}"')
 
         missing_table = False
         if parent_name:

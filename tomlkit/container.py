@@ -1,28 +1,11 @@
-from __future__ import unicode_literals
-
 import copy
 
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from ._compat import decode
 from ._utils import merge_dicts
-from .exceptions import KeyAlreadyPresent
-from .exceptions import NonExistentKey
-from .exceptions import ParseError
-from .exceptions import TOMLKitError
-from .items import AoT
-from .items import Comment
-from .items import Item
-from .items import Key
-from .items import Null
-from .items import Table
-from .items import Whitespace
+from .exceptions import ATOMLError, KeyAlreadyPresent, NonExistentKey
+from .items import AoT, Comment, Item, Key, Null, Table, Whitespace
 from .items import item as _item
 
 
@@ -67,7 +50,7 @@ class Container(dict):
     def parsing(self, parsing):  # type: (bool) -> None
         self._parsed = parsing
 
-        for k, v in self._body:
+        for _, v in self._body:
             if isinstance(v, Table):
                 v.value.parsing(parsing)
             elif isinstance(v, AoT):
@@ -171,7 +154,7 @@ class Container(dict):
 
                         return self
                     elif current_body_element[0].is_dotted():
-                        raise TOMLKitError("Redefinition of an existing table")
+                        raise ATOMLError("Redefinition of an existing table")
                 elif not item.is_super_table():
                     raise KeyAlreadyPresent(key)
             elif isinstance(item, AoT):
@@ -247,7 +230,7 @@ class Container(dict):
             self._table_keys.append(key)
 
         if key is not None:
-            super(Container, self).__setitem__(key.key, item.value)
+            super().__setitem__(key.key, item.value)
 
         return self
 
@@ -265,7 +248,7 @@ class Container(dict):
         else:
             self._body[idx] = (None, Null())
 
-        super(Container, self).__delitem__(key.key)
+        super().__delitem__(key.key)
 
         return self
 
@@ -312,7 +295,7 @@ class Container(dict):
         self._body.insert(idx + 1, (other_key, item))
 
         if key is not None:
-            super(Container, self).__setitem__(other_key.key, item.value)
+            super().__setitem__(other_key.key, item.value)
 
         return self
 
@@ -320,7 +303,7 @@ class Container(dict):
         self, idx, key, item
     ):  # type: (int, Union[str, Key], Union[Item, Any]) -> Container
         if idx > len(self._body) - 1:
-            raise ValueError("Unable to insert at position {}".format(idx))
+            raise ValueError(f"Unable to insert at position {idx}")
 
         if not isinstance(key, Key):
             key = Key(key)
@@ -354,7 +337,7 @@ class Container(dict):
         self._body.insert(idx, (key, item))
 
         if key is not None:
-            super(Container, self).__setitem__(key.key, item.value)
+            super().__setitem__(key.key, item.value)
 
         return self
 
@@ -514,7 +497,7 @@ class Container(dict):
     # Dictionary methods
 
     def keys(self):  # type: () -> Generator[str]
-        return super(Container, self).keys()
+        return super().keys()
 
     def values(self):  # type: () -> Generator[Item]
         for k in self.keys():
@@ -627,7 +610,7 @@ class Container(dict):
 
         self._map[new_key] = self._map.pop(k)
         if new_key != k:
-            super(Container, self).__delitem__(k)
+            super().__delitem__(k)
 
         if isinstance(self._map[new_key], tuple):
             self._map[new_key] = self._map[new_key][0]
@@ -647,13 +630,13 @@ class Container(dict):
 
         self._body[idx] = (new_key, value)
 
-        super(Container, self).__setitem__(new_key.key, value.value)
+        super().__setitem__(new_key.key, value.value)
 
     def __str__(self):  # type: () -> str
         return str(self.value)
 
     def __repr__(self):  # type: () -> str
-        return super(Container, self).__repr__()
+        return super().__repr__()
 
     def __eq__(self, other):  # type: (Dict) -> bool
         if not isinstance(other, dict):
@@ -684,7 +667,7 @@ class Container(dict):
 
     def __copy__(self):  # type: () -> Container
         c = self.__class__(self._parsed)
-        for k, v in super(Container, self).copy().items():
+        for k, v in super().copy().items():
             super(Container, c).__setitem__(k, v)
 
         c._body += self.body
@@ -711,12 +694,12 @@ class OutOfOrderTableProxy(dict):
                     self._internal_container.append(k, v)
                     self._tables_map[k] = table_idx
                     if k is not None:
-                        super(OutOfOrderTableProxy, self).__setitem__(k.key, v)
+                        super().__setitem__(k.key, v)
             else:
                 self._internal_container.append(key, item)
                 self._map[key] = i
                 if key is not None:
-                    super(OutOfOrderTableProxy, self).__setitem__(key.key, item)
+                    super().__setitem__(key.key, item)
 
     @property
     def value(self):
@@ -742,11 +725,10 @@ class OutOfOrderTableProxy(dict):
             self._container[key] = item
 
         if key is not None:
-            super(OutOfOrderTableProxy, self).__setitem__(key, item)
+            super().__setitem__(key, item)
 
     def __delitem__(self, key):  # type: (Union[Key, str]) -> None
         if key in self._map:
-            idx = self._map[key]
             del self._container[key]
             del self._map[key]
         elif key in self._tables_map:

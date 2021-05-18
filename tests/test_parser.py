@@ -1,8 +1,8 @@
 import pytest
 
-from tomlkit.exceptions import InternalParserError
-from tomlkit.items import StringType
-from tomlkit.parser import Parser
+from atoml.exceptions import InternalParserError
+from atoml.items import StringType
+from atoml.parser import Parser
 
 
 def test_parser_should_raise_an_internal_error_if_parsing_wrong_type_of_string():

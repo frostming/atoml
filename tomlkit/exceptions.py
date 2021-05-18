@@ -1,12 +1,12 @@
 from typing import Optional
 
 
-class TOMLKitError(Exception):
+class ATOMLError(Exception):
 
     pass
 
 
-class ParseError(ValueError, TOMLKitError):
+class ParseError(ValueError, ATOMLError):
     """
     This error occurs when the parser encounters a syntax error
     in the TOML being parsed. The error references the line and
@@ -22,9 +22,7 @@ class ParseError(ValueError, TOMLKitError):
         if message is None:
             message = "TOML parse error"
 
-        super(ParseError, self).__init__(
-            "{} at line {} col {}".format(message, self._line, self._col)
-        )
+        super().__init__(f"{message} at line {self._line} col {self._col}")
 
     @property
     def line(self):
@@ -43,7 +41,7 @@ class MixedArrayTypesError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Mixed types found in array"
 
-        super(MixedArrayTypesError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidNumberError(ParseError):
@@ -54,7 +52,7 @@ class InvalidNumberError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid number"
 
-        super(InvalidNumberError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidDateTimeError(ParseError):
@@ -65,7 +63,7 @@ class InvalidDateTimeError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid datetime"
 
-        super(InvalidDateTimeError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidDateError(ParseError):
@@ -76,7 +74,7 @@ class InvalidDateError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid date"
 
-        super(InvalidDateError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidTimeError(ParseError):
@@ -87,7 +85,7 @@ class InvalidTimeError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid time"
 
-        super(InvalidTimeError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidNumberOrDateError(ParseError):
@@ -98,7 +96,7 @@ class InvalidNumberOrDateError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid number or date format"
 
-        super(InvalidNumberOrDateError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidUnicodeValueError(ParseError):
@@ -109,7 +107,7 @@ class InvalidUnicodeValueError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Invalid unicode value"
 
-        super(InvalidUnicodeValueError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class UnexpectedCharError(ParseError):
@@ -118,9 +116,9 @@ class UnexpectedCharError(ParseError):
     """
 
     def __init__(self, line, col, char):  # type: (int, int, str) -> None
-        message = "Unexpected character: {}".format(repr(char))
+        message = f"Unexpected character: {repr(char)}"
 
-        super(UnexpectedCharError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class EmptyKeyError(ParseError):
@@ -131,7 +129,7 @@ class EmptyKeyError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Empty key"
 
-        super(EmptyKeyError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class EmptyTableNameError(ParseError):
@@ -142,7 +140,7 @@ class EmptyTableNameError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Empty table name"
 
-        super(EmptyTableNameError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InvalidCharInStringError(ParseError):
@@ -151,9 +149,9 @@ class InvalidCharInStringError(ParseError):
     """
 
     def __init__(self, line, col, char):  # type: (int, int, str) -> None
-        message = "Invalid character {} in string".format(repr(char))
+        message = f"Invalid character {repr(char)} in string"
 
-        super(InvalidCharInStringError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class UnexpectedEofError(ParseError):
@@ -164,7 +162,7 @@ class UnexpectedEofError(ParseError):
     def __init__(self, line, col):  # type: (int, int) -> None
         message = "Unexpected end of file"
 
-        super(UnexpectedEofError, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)
 
 
 class InternalParserError(ParseError):
@@ -177,31 +175,31 @@ class InternalParserError(ParseError):
     ):  # type: (int, int, Optional[str]) -> None
         msg = "Internal parser error"
         if message:
-            msg += " ({})".format(message)
+            msg += f" ({message})"
 
-        super(InternalParserError, self).__init__(line, col, message=msg)
+        super().__init__(line, col, message=msg)
 
 
-class NonExistentKey(KeyError, TOMLKitError):
+class NonExistentKey(KeyError, ATOMLError):
     """
     A non-existent key was used.
     """
 
     def __init__(self, key):
-        message = 'Key "{}" does not exist.'.format(key)
+        message = f'Key "{key}" does not exist.'
 
-        super(NonExistentKey, self).__init__(message)
+        super().__init__(message)
 
 
-class KeyAlreadyPresent(TOMLKitError):
+class KeyAlreadyPresent(ATOMLError):
     """
     An already present key was used.
     """
 
     def __init__(self, key):
-        message = 'Key "{}" already exists.'.format(key)
+        message = f'Key "{key}" already exists.'
 
-        super(KeyAlreadyPresent, self).__init__(message)
+        super().__init__(message)
 
 
 class InvalidControlChar(ParseError):
@@ -218,4 +216,4 @@ class InvalidControlChar(ParseError):
             "use {} instead".format(type, display_code)
         )
 
-        super(InvalidControlChar, self).__init__(line, col, message=message)
+        super().__init__(line, col, message=message)

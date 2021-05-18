@@ -1,39 +1,26 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-import itertools
+from __future__ import annotations
 
 from copy import copy
-from typing import Any
-from typing import Optional
-from typing import Tuple
-from typing import Type
+from typing import Any, Optional, Tuple, Type
 
-from ._compat import PY2
-from ._compat import unicode
-from .exceptions import ParseError
-from .exceptions import UnexpectedCharError
-from .exceptions import UnexpectedEofError
+from .exceptions import ParseError, UnexpectedCharError
 from .toml_char import TOMLChar
 
 
 class _State:
     def __init__(
-        self, source, save_marker=False, restore=False
-    ):  # type: (_Source, Optional[bool], Optional[bool]) -> None
+        self,
+        source: Source,
+        save_marker: bool | None = False,
+        restore: bool | None = False,
+    ) -> None:
         self._source = source
         self._save_marker = save_marker
         self.restore = restore
 
     def __enter__(self):  # type: () -> None
         # Entering this context manager - save the state
-        if PY2:
-            # Python 2.7 does not allow to directly copy
-            # an iterator, so we have to make tees of the original
-            # chars iterator.
-            self._source._chars, self._chars = itertools.tee(self._source._chars)
-        else:
-            self._chars = copy(self._source._chars)
+        self._chars = copy(self._source._chars)
         self._idx = self._source._idx
         self._current = self._source._current
         self._marker = self._source._marker
@@ -72,11 +59,11 @@ class _StateHandler:
         return state.__exit__(exception_type, exception_val, trace)
 
 
-class Source(unicode):
+class Source(str):
     EOF = TOMLChar("\0")
 
-    def __init__(self, _):  # type: (unicode) -> None
-        super(Source, self).__init__()
+    def __init__(self, _):  # type: (str) -> None
+        super().__init__()
 
         # Collection of TOMLChars
         self._chars = iter([(i, TOMLChar(c)) for i, c in enumerate(self)])
@@ -112,7 +99,7 @@ class Source(unicode):
     def marker(self):  # type: () -> int
         return self._marker
 
-    def extract(self):  # type: () -> unicode
+    def extract(self):  # type: () -> str
         """
         Extracts the value between marker and index
         """

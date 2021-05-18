@@ -1,32 +1,25 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import math
 import pickle
 
-from datetime import date
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 
 import pytest
 
-from tomlkit import inline_table
-from tomlkit import parse
-from tomlkit._compat import PY2
-from tomlkit._compat import OrderedDict
-from tomlkit.exceptions import NonExistentKey
-from tomlkit.items import Bool
-from tomlkit.items import InlineTable
-from tomlkit.items import Integer
-from tomlkit.items import Key
-from tomlkit.items import KeyType
-from tomlkit.items import String
-from tomlkit.items import StringType
-from tomlkit.items import Table
-from tomlkit.items import Trivia
-from tomlkit.items import item
-from tomlkit.parser import Parser
+from atoml import inline_table, parse
+from atoml.exceptions import NonExistentKey
+from atoml.items import (
+    Bool,
+    InlineTable,
+    Integer,
+    Key,
+    KeyType,
+    String,
+    StringType,
+    Table,
+    Trivia,
+    item,
+)
+from atoml.parser import Parser
 
 
 def test_key_comparison():
@@ -156,10 +149,9 @@ def test_array_behaves_like_a_list():
     assert a == [2]
     assert a.as_string() == "[2]"
 
-    if not PY2:
-        a.clear()
-        assert a == []
-        assert a.as_string() == "[]"
+    a.clear()
+    assert a == []
+    assert a.as_string() == "[]"
 
     content = """a = [1, 2] # Comment
 """
@@ -211,20 +203,13 @@ bar = "baz"
 
 def test_dicts_are_converted_to_tables_and_keep_order():
     t = item(
-        OrderedDict(
-            [
-                (
-                    "foo",
-                    OrderedDict(
-                        [
-                            ("bar", "baz"),
-                            ("abc", 123),
-                            ("baz", [OrderedDict([("c", 3), ("b", 2), ("a", 1)])]),
-                        ]
-                    ),
-                )
-            ]
-        )
+        {
+            "foo": {
+                "bar": "baz",
+                "abc": 123,
+                "baz": [{"c": 3, "b": 2, "a": 1}],
+            },
+        }
     )
 
     assert (
@@ -243,20 +228,13 @@ a = 1
 
 def test_dicts_are_converted_to_tables_and_are_sorted_if_requested():
     t = item(
-        OrderedDict(
-            [
-                (
-                    "foo",
-                    OrderedDict(
-                        [
-                            ("bar", "baz"),
-                            ("abc", 123),
-                            ("baz", [OrderedDict([("c", 3), ("b", 2), ("a", 1)])]),
-                        ]
-                    ),
-                )
-            ]
-        ),
+        {
+            "foo": {
+                "bar": "baz",
+                "abc": 123,
+                "baz": [{"c": 3, "b": 2, "a": 1}],
+            },
+        },
         _sort_keys=True,
     )
 

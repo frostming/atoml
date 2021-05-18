@@ -2,11 +2,10 @@ import json
 
 import pytest
 
-from tomlkit import parse
-from tomlkit._compat import decode
-from tomlkit._compat import unicode
-from tomlkit._utils import parse_rfc3339
-from tomlkit.exceptions import TOMLKitError
+from atoml import parse
+from atoml._compat import decode
+from atoml._utils import parse_rfc3339
+from atoml.exceptions import ATOMLError
 
 
 def to_bool(s):
@@ -16,7 +15,7 @@ def to_bool(s):
 
 
 stypes = {
-    "string": unicode,
+    "string": str,
     "bool": to_bool,
     "integer": int,
     "float": float,
@@ -49,5 +48,5 @@ def test_valid_decode(valid_case):
 
 
 def test_invalid_decode(invalid_decode_case):
-    with pytest.raises(TOMLKitError):
+    with pytest.raises(ATOMLError):
         parse(invalid_decode_case["toml"])

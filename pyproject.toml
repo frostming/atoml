@@ -1,41 +1,35 @@
-[tool.poetry]
-name = "tomlkit"
-version = "0.7.0"
-description = "Style preserving TOML library"
-authors = ["Sébastien Eustace <sebastien@eustace.io>"]
-license = "MIT"
+[tool.pdm]
 
-readme = "README.md"
-
-homepage = "https://github.com/sdispater/tomlkit"
-repository = "https://github.com/sdispater/tomlkit"
-
-packages = [
-    {include = "tomlkit"},
-    {include = "tests", format = "sdist"}
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
 ]
 
-[tool.poetry.dependencies]
-python = "~2.7 || ^3.5"
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
 
-# enum34 is needed for Python 2.7
-enum34 = { version = "^1.1", python = "~2.7" }
 
-# functools32 is needed for Python 2.7
-functools32 = { version = "^3.2.3", python = "~2.7" }
+[project]
+# PEP 621 project metadata
+# See https://www.python.org/dev/peps/pep-0621/
+name = "atoml"
+version = {use_scm = true}
+authors = [
+    {name = "Frost Ming", email = "mianghong@gmail.com"},
+    {name = "Sébastien Eustace", email = "sebastien@eustace.io"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.6"
+dependencies = []
+description = "Yet another style preserving TOML library"
+readme = "README.md"
+dynamic = ["classifiers", "version"]
 
-# The typing module is not in the stdlib in Python 2.7 and 3.4
-typing = { version = "^3.6", python = "~2.7 || ~3.4" }
-
-[tool.poetry.dev-dependencies]
-pytest = "^4.6"
-pytest-cov = "^2.5"
-black = { version = "^19.3b0", markers = "python_version >= '3.6' and python_version < '4.0' and implementation_name != 'pypy'" }
-pre-commit = "^1.10"
-tox = "^3.1"
-codecov = "^2.0"
-pyyaml = "~5.3.1"
-isort = {version = "^5.2.0", python = "^3.6"}
+[project.urls]
+Homepage = "https://github.com/frostming/atoml.git"
+Repository = "https://github.com/frostming/atoml.git"
 
 [tool.black]
 line-length = 88
@@ -56,14 +50,9 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
-force_single_line = true
 atomic = true
 lines_after_imports = 2
 lines_between_types = 1
 
-known_first_party = ["tomlkit"]
+known_first_party = ["atoml"]
 known_third_party = ["pytest"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0a9"]
-build-backend = "poetry.core.masonry.api"

@@ -1,31 +1,19 @@
-from __future__ import unicode_literals
+from __future__ import annotations
 
 import re
 import string
 
-from datetime import date
-from datetime import datetime
-from datetime import time
+from datetime import date, datetime, time
 from enum import Enum
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import List
-from typing import Optional
-from typing import Union
+from functools import lru_cache
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Union
 
-from ._compat import PY2
-from ._compat import PY38
-from ._compat import decode
-from ._compat import long
-from ._compat import unicode
+from ._compat import PY38, decode
 from ._utils import escape_string
 
 
-if PY2:
-    from functools32 import lru_cache
-else:
-    from functools import lru_cache
+if TYPE_CHECKING:
+    from . import container
 
 
 def item(value, _parent=None, _sort_keys=False):
@@ -74,7 +62,7 @@ def item(value, _parent=None, _sort_keys=False):
             a.append(v)
 
         return a
-    elif isinstance(value, (str, unicode)):
+    elif isinstance(value, str):
         escaped = escape_string(value)
 
         return String(StringType.SLB, decode(value), escaped, Trivia())
@@ -104,7 +92,7 @@ def item(value, _parent=None, _sort_keys=False):
             value.isoformat(),
         )
 
-    raise ValueError("Invalid type {}".format(type(value)))
+    raise ValueError(f"Invalid type {type(value)}")
 
 
 class StringType(Enum):
@@ -155,9 +143,6 @@ class BoolType(Enum):
     @lru_cache(maxsize=None)
     def __bool__(self):
         return {BoolType.TRUE: True, BoolType.FALSE: False}[self]
-
-    if PY2:
-        __nonzero__ = __bool__  # for PY2
 
     def __iter__(self):
         return iter(self.value)
@@ -240,7 +225,7 @@ class Key:
         return self.t == KeyType.Bare
 
     def as_string(self):  # type: () -> str
-        return "{}{}{}".format(self.delimiter, self._original, self.delimiter)
+        return f"{self.delimiter}{self._original}{self.delimiter}"
 
     def __hash__(self):  # type: () -> int
         return hash(self.key)
@@ -255,10 +240,10 @@ class Key:
         return self.as_string()
 
     def __repr__(self):  # type: () -> str
-        return "<Key {}>".format(self.as_string())
+        return f"<Key {self.as_string()}>"
 
 
-class Item(object):
+class Item:
     """
     An item within a TOML document.
     """
@@ -350,7 +335,7 @@ class Whitespace(Item):
         return self._s
 
     def __repr__(self):  # type: () -> str
-        return "<{} {}>".format(self.__class__.__name__, repr(self._s))
+        return f"<{self.__class__.__name__} {repr(self._s)}>"
 
     def _getstate(self, protocol=3):
         return self._s, self._fixed
@@ -371,19 +356,19 @@ class Comment(Item):
         )
 
     def __str__(self):  # type: () -> str
-        return "{}{}".format(self._trivia.indent, decode(self._trivia.comment))
+        return f"{self._trivia.indent}{decode(self._trivia.comment)}"
 
 
-class Integer(long, Item):
+class Integer(int, Item):
     """
     An integer literal.
     """
 
     def __new__(cls, value, trivia, raw):  # type: (int, Trivia, str) -> Integer
-        return super(Integer, cls).__new__(cls, value)
+        return super().__new__(cls, value)
 
     def __init__(self, _, trivia, raw):  # type: (int, Trivia, str) -> None
-        super(Integer, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._raw = raw
         self._sign = False
@@ -403,12 +388,12 @@ class Integer(long, Item):
         return self._raw
 
     def __add__(self, other):
-        result = super(Integer, self).__add__(other)
+        result = super().__add__(other)
 
         return self._new(result)
 
     def __radd__(self, other):
-        result = super(Integer, self).__radd__(other)
+        result = super().__radd__(other)
 
         if isinstance(other, Integer):
             return self._new(result)
@@ -416,12 +401,12 @@ class Integer(long, Item):
         return result
 
     def __sub__(self, other):
-        result = super(Integer, self).__sub__(other)
+        result = super().__sub__(other)
 
         return self._new(result)
 
     def __rsub__(self, other):
-        result = super(Integer, self).__rsub__(other)
+        result = super().__rsub__(other)
 
         if isinstance(other, Integer):
             return self._new(result)
@@ -447,10 +432,10 @@ class Float(float, Item):
     """
 
     def __new__(cls, value, trivia, raw):  # type: (float, Trivia, str) -> Integer
-        return super(Float, cls).__new__(cls, value)
+        return super().__new__(cls, value)
 
     def __init__(self, _, trivia, raw):  # type: (float, Trivia, str) -> None
-        super(Float, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._raw = raw
         self._sign = False
@@ -470,12 +455,12 @@ class Float(float, Item):
         return self._raw
 
     def __add__(self, other):
-        result = super(Float, self).__add__(other)
+        result = super().__add__(other)
 
         return self._new(result)
 
     def __radd__(self, other):
-        result = super(Float, self).__radd__(other)
+        result = super().__radd__(other)
 
         if isinstance(other, Float):
             return self._new(result)
@@ -483,12 +468,12 @@ class Float(float, Item):
         return result
 
     def __sub__(self, other):
-        result = super(Float, self).__sub__(other)
+        result = super().__sub__(other)
 
         return self._new(result)
 
     def __rsub__(self, other):
-        result = super(Float, self).__rsub__(other)
+        result = super().__rsub__(other)
 
         if isinstance(other, Float):
             return self._new(result)
@@ -514,7 +499,7 @@ class Bool(Item):
     """
 
     def __init__(self, t, trivia):  # type: (int, Trivia) -> None
-        super(Bool, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._value = bool(t)
 
@@ -567,7 +552,7 @@ class DateTime(Item, datetime):
         tzinfo,
         trivia,
         raw,
-        **kwargs
+        **kwargs,
     ):  # type: (int, int, int, int, int, int, int, Optional[datetime.tzinfo], Trivia, str, Any) -> datetime
         return datetime.__new__(
             cls,
@@ -579,13 +564,13 @@ class DateTime(Item, datetime):
             second,
             microsecond,
             tzinfo=tzinfo,
-            **kwargs
+            **kwargs,
         )
 
     def __init__(
         self, year, month, day, hour, minute, second, microsecond, tzinfo, trivia, raw
     ):  # type: (int, int, int, int, int, int, int, Optional[datetime.tzinfo], Trivia, str) -> None
-        super(DateTime, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._raw = raw
 
@@ -613,7 +598,7 @@ class DateTime(Item, datetime):
                 self.tzinfo,
             ).__add__(other)
         else:
-            result = super(DateTime, self).__add__(other)
+            result = super().__add__(other)
 
         return self._new(result)
 
@@ -630,7 +615,7 @@ class DateTime(Item, datetime):
                 self.tzinfo,
             ).__sub__(other)
         else:
-            result = super(DateTime, self).__sub__(other)
+            result = super().__sub__(other)
 
         if isinstance(result, datetime):
             result = self._new(result)
@@ -679,7 +664,7 @@ class Date(Item, date):
     def __init__(
         self, year, month, day, trivia, raw
     ):  # type: (int, int, int, Trivia, str) -> None
-        super(Date, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._raw = raw
 
@@ -698,7 +683,7 @@ class Date(Item, date):
         if PY38:
             result = date(self.year, self.month, self.day).__add__(other)
         else:
-            result = super(Date, self).__add__(other)
+            result = super().__add__(other)
 
         return self._new(result)
 
@@ -706,7 +691,7 @@ class Date(Item, date):
         if PY38:
             result = date(self.year, self.month, self.day).__sub__(other)
         else:
-            result = super(Date, self).__sub__(other)
+            result = super().__sub__(other)
 
         if isinstance(result, date):
             result = self._new(result)
@@ -735,7 +720,7 @@ class Time(Item, time):
     def __init__(
         self, hour, minute, second, microsecond, tzinfo, trivia, raw
     ):  # type: (int, int, int, int, Optional[datetime.tzinfo], Trivia, str) -> None
-        super(Time, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._raw = raw
 
@@ -770,7 +755,7 @@ class Array(Item, list):
     def __init__(
         self, value, trivia, multiline=False
     ):  # type: (list, Trivia, bool) -> None
-        super(Array, self).__init__(trivia)
+        super().__init__(trivia)
 
         list.__init__(
             self, [v.value for v in value if not isinstance(v, (Whitespace, Comment))]
@@ -810,16 +795,14 @@ class Array(Item, list):
             self._value.append(Whitespace(", "))
 
         it = item(_item)
-        super(Array, self).append(it.value)
+        super().append(it.value)
 
         self._value.append(it)
 
-    if not PY2:
+    def clear(self):
+        super().clear()
 
-        def clear(self):
-            super(Array, self).clear()
-
-            self._value.clear()
+        self._value.clear()
 
     def __iadd__(self, other):  # type: (list) -> Array
         if not isinstance(other, list):
@@ -831,7 +814,7 @@ class Array(Item, list):
         return self
 
     def __delitem__(self, key):
-        super(Array, self).__delitem__(key)
+        super().__delitem__(key)
 
         j = 0 if key >= 0 else -1
         for i, v in enumerate(self._value if key >= 0 else reversed(self._value)):
@@ -879,8 +862,8 @@ class Table(Item, dict):
         is_super_table=False,
         name=None,
         display_name=None,
-    ):  # type: (tomlkit.container.Container, Trivia, bool, bool, Optional[str], Optional[str]) -> None
-        super(Table, self).__init__(trivia)
+    ):  # type: (container.Container, Trivia, bool, bool, Optional[str], Optional[str]) -> None
+        super().__init__(trivia)
 
         self.name = name
         self.display_name = display_name
@@ -890,10 +873,10 @@ class Table(Item, dict):
 
         for k, v in self._value.body:
             if k is not None:
-                super(Table, self).__setitem__(k.key, v)
+                super().__setitem__(k.key, v)
 
     @property
-    def value(self):  # type: () -> tomlkit.container.Container
+    def value(self):  # type: () -> container.Container
         return self._value
 
     @property
@@ -924,7 +907,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super(Table, self).__setitem__(key, _item)
+            super().__setitem__(key, _item)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -951,7 +934,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super(Table, self).__setitem__(key, _item)
+            super().__setitem__(key, _item)
 
         return self
 
@@ -962,7 +945,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super(Table, self).__delitem__(key)
+            super().__delitem__(key)
 
         return self
 
@@ -978,7 +961,7 @@ class Table(Item, dict):
     # Helpers
 
     def indent(self, indent):  # type: (int) -> Table
-        super(Table, self).indent(indent)
+        super().indent(indent)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -986,23 +969,20 @@ class Table(Item, dict):
         else:
             indent = m.group(1)
 
-        for k, item in self._value.body:
+        for _, item in self._value.body:
             if not isinstance(item, Whitespace):
                 item.trivia.indent = indent + item.trivia.indent
 
         return self
 
     def keys(self):  # type: () -> Generator[str]
-        for k in self._value.keys():
-            yield k
+        yield from self._value.keys()
 
     def values(self):  # type: () -> Generator[Item]
-        for v in self._value.values():
-            yield v
+        yield from self._value.values()
 
     def items(self):  # type: () -> Generator[Item]
-        for k, v in self._value.items():
-            yield k, v
+        yield from self._value.items()
 
     def update(self, other):  # type: (Dict) -> None
         for k, v in other.items():
@@ -1024,7 +1004,7 @@ class Table(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super(Table, self).__setitem__(key, value)
+            super().__setitem__(key, value)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -1043,7 +1023,7 @@ class Table(Item, dict):
         self.remove(key)
 
     def __repr__(self):
-        return super(Table, self).__repr__()
+        return super().__repr__()
 
     def __str__(self):
         return str(self.value)
@@ -1066,15 +1046,15 @@ class InlineTable(Item, dict):
 
     def __init__(
         self, value, trivia, new=False
-    ):  # type: (tomlkit.container.Container, Trivia, bool) -> None
-        super(InlineTable, self).__init__(trivia)
+    ):  # type: (container.Container, Trivia, bool) -> None
+        super().__init__(trivia)
 
         self._value = value
         self._new = new
 
         for k, v in self._value.body:
             if k is not None:
-                super(InlineTable, self).__setitem__(k.key, v)
+                super().__setitem__(k.key, v)
 
     @property
     def discriminant(self):  # type: () -> int
@@ -1103,7 +1083,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super(InlineTable, self).__setitem__(key, _item)
+            super().__setitem__(key, _item)
 
         return self
 
@@ -1114,7 +1094,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super(InlineTable, self).__delitem__(key)
+            super().__delitem__(key)
 
         return self
 
@@ -1151,16 +1131,13 @@ class InlineTable(Item, dict):
         return buf
 
     def keys(self):  # type: () -> Generator[str]
-        for k in self._value.keys():
-            yield k
+        yield from self._value.keys()
 
     def values(self):  # type: () -> Generator[Item]
-        for v in self._value.values():
-            yield v
+        yield from self._value.values()
 
     def items(self):  # type: () -> Generator[Item]
-        for k, v in self._value.items():
-            yield k, v
+        yield from self._value.items()
 
     def update(self, other):  # type: (Dict) -> None
         for k, v in other.items():
@@ -1182,7 +1159,7 @@ class InlineTable(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super(InlineTable, self).__setitem__(key, value)
+            super().__setitem__(key, value)
         if value.trivia.comment:
             value.trivia.comment = ""
 
@@ -1203,24 +1180,24 @@ class InlineTable(Item, dict):
         self.remove(key)
 
     def __repr__(self):
-        return super(InlineTable, self).__repr__()
+        return super().__repr__()
 
     def _getstate(self, protocol=3):
         return (self._value, self._trivia)
 
 
-class String(unicode, Item):
+class String(str, Item):
     """
     A string literal.
     """
 
     def __new__(cls, t, value, original, trivia):
-        return super(String, cls).__new__(cls, value)
+        return super().__new__(cls, value)
 
     def __init__(
         self, t, _, original, trivia
     ):  # type: (StringType, str, original, Trivia) -> None
-        super(String, self).__init__(trivia)
+        super().__init__(trivia)
 
         self._t = t
         self._original = original
@@ -1234,15 +1211,15 @@ class String(unicode, Item):
         return self
 
     def as_string(self):  # type: () -> str
-        return "{}{}{}".format(self._t.value, decode(self._original), self._t.value)
+        return f"{self._t.value}{decode(self._original)}{self._t.value}"
 
     def __add__(self, other):
-        result = super(String, self).__add__(other)
+        result = super().__add__(other)
 
         return self._new(result)
 
     def __sub__(self, other):
-        result = super(String, self).__sub__(other)
+        result = super().__sub__(other)
 
         return self._new(result)
 
@@ -1250,7 +1227,7 @@ class String(unicode, Item):
         return String(self._t, result, result, self._trivia)
 
     def _getstate(self, protocol=3):
-        return self._t, unicode(self), self._original, self._trivia
+        return self._t, str(self), self._original, self._trivia
 
 
 class AoT(Item, list):
@@ -1265,7 +1242,7 @@ class AoT(Item, list):
         self._body = []
         self._parsed = parsed
 
-        super(AoT, self).__init__(Trivia(trail=""))
+        super().__init__(Trivia(trail=""))
 
         for table in body:
             self.append(table)
@@ -1298,7 +1275,7 @@ class AoT(Item, list):
 
         self._body.append(table)
 
-        super(AoT, self).append(table)
+        super().append(table)
 
         return table
 
@@ -1310,7 +1287,7 @@ class AoT(Item, list):
         return b
 
     def __repr__(self):  # type: () -> str
-        return "<AoT {}>".format(self.value)
+        return f"<AoT {self.value}>"
 
     def _getstate(self, protocol=3):
         return self._body, self.name, self._parsed

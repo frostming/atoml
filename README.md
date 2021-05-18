@@ -1,42 +1,33 @@
-[github_release]: https://img.shields.io/github/release/sdispater/tomlkit.svg?logo=github&logoColor=white
-[pypi_version]: https://img.shields.io/pypi/v/tomlkit.svg?logo=python&logoColor=white
-[python_versions]: https://img.shields.io/pypi/pyversions/tomlkit.svg?logo=python&logoColor=white
-[github_license]: https://img.shields.io/github/license/sdispater/tomlkit.svg?logo=github&logoColor=white
-[travisci]: https://img.shields.io/travis/com/sdispater/tomlkit/master.svg?logo=travis&logoColor=white&label=Travis%20CI
-[appveyor]: https://img.shields.io/appveyor/ci/sdispater/tomlkit/master.svg?logo=appveyor&logoColor=white&label=AppVeyor
-<!--Codecov logo not offered by shields.io or simpleicons.org, this is Codecov's SVG image modified to be white-->
-[codecov]: https://img.shields.io/codecov/c/github/sdispater/tomlkit/master.svg?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNDgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CgogPGc+CiAgPHRpdGxlPmJhY2tncm91bmQ8L3RpdGxlPgogIDxyZWN0IGZpbGw9Im5vbmUiIGlkPSJjYW52YXNfYmFja2dyb3VuZCIgaGVpZ2h0PSI0MDIiIHdpZHRoPSI1ODIiIHk9Ii0xIiB4PSItMSIvPgogPC9nPgogPGc+CiAgPHRpdGxlPkxheWVyIDE8L3RpdGxlPgogIDxwYXRoIGlkPSJzdmdfMSIgZmlsbC1ydWxlPSJldmVub2RkIiBmaWxsPSIjZmZmZmZmIiBkPSJtMjUuMDE0LDBjLTEzLjc4NCwwLjAxIC0yNS4wMDQsMTEuMTQ5IC0yNS4wMTQsMjQuODMybDAsMC4wNjJsNC4yNTQsMi40ODJsMC4wNTgsLTAuMDM5YTEyLjIzOCwxMi4yMzggMCAwIDEgOS4wNzgsLTEuOTI4YTExLjg0NCwxMS44NDQgMCAwIDEgNS45OCwyLjk3NWwwLjczLDAuNjhsMC40MTMsLTAuOTA0YzAuNCwtMC44NzQgMC44NjIsLTEuNjk2IDEuMzc0LC0yLjQ0M2MwLjIwNiwtMC4zIDAuNDMzLC0wLjYwNCAwLjY5MiwtMC45MjlsMC40MjcsLTAuNTM1bC0wLjUyNiwtMC40NGExNy40NSwxNy40NSAwIDAgMCAtOC4xLC0zLjc4MWExNy44NTMsMTcuODUzIDAgMCAwIC04LjM3NSwwLjQ5YzIuMDIzLC04Ljg2OCA5LjgyLC0xNS4wNSAxOS4wMjcsLTE1LjA1N2M1LjE5NSwwIDEwLjA3OCwyLjAwNyAxMy43NTIsNS42NTJjMi42MTksMi41OTggNC40MjIsNS44MzUgNS4yMjQsOS4zNzJhMTcuOTA4LDE3LjkwOCAwIDAgMCAtNS4yMDgsLTAuNzlsLTAuMzE4LC0wLjAwMWExOC4wOTYsMTguMDk2IDAgMCAwIC0yLjA2NywwLjE1M2wtMC4wODcsMC4wMTJjLTAuMzAzLDAuMDQgLTAuNTcsMC4wODEgLTAuODEzLDAuMTI2Yy0wLjExOSwwLjAyIC0wLjIzNywwLjA0NSAtMC4zNTUsMC4wNjhjLTAuMjgsMC4wNTcgLTAuNTU0LDAuMTE5IC0wLjgxNiwwLjE4NWwtMC4yODgsMC4wNzNjLTAuMzM2LDAuMDkgLTAuNjc1LDAuMTkxIC0xLjAwNiwwLjNsLTAuMDYxLDAuMDJjLTAuNzQsMC4yNTEgLTEuNDc4LDAuNTU4IC0yLjE5LDAuOTE0bC0wLjA1NywwLjAyOWMtMC4zMTYsMC4xNTggLTAuNjM2LDAuMzMzIC0wLjk3OCwwLjUzNGwtMC4wNzUsMC4wNDVhMTYuOTcsMTYuOTcgMCAwIDAgLTQuNDE0LDMuNzhsLTAuMTU3LDAuMTkxYy0wLjMxNywwLjM5NCAtMC41NjcsMC43MjcgLTAuNzg3LDEuMDQ4Yy0wLjE4NCwwLjI3IC0wLjM2OSwwLjU2IC0wLjYsMC45NDJsLTAuMTI2LDAuMjE3Yy0wLjE4NCwwLjMxOCAtMC4zNDgsMC42MjIgLTAuNDg3LDAuOWwtMC4wMzMsMC4wNjFjLTAuMzU0LDAuNzExIC0wLjY2MSwxLjQ1NSAtMC45MTcsMi4yMTRsLTAuMDM2LDAuMTExYTE3LjEzLDE3LjEzIDAgMCAwIC0wLjg1NSw1LjY0NGwwLjAwMywwLjIzNGEyMy41NjUsMjMuNTY1IDAgMCAwIDAuMDQzLDAuODIyYzAuMDEsMC4xMyAwLjAyMywwLjI1OSAwLjAzNiwwLjM4OGMwLjAxNSwwLjE1OCAwLjAzNCwwLjMxNiAwLjA1MywwLjQ3MWwwLjAxMSwwLjA4OGwwLjAyOCwwLjIxNGMwLjAzNywwLjI2NCAwLjA4LDAuNTI1IDAuMTMsMC43ODdjMC41MDMsMi42MzcgMS43Niw1LjI3NCAzLjYzNSw3LjYyNWwwLjA4NSwwLjEwNmwwLjA4NywtMC4xMDRjMC43NDgsLTAuODg0IDIuNjAzLC0zLjY4NyAyLjc2LC01LjM2OWwwLjAwMywtMC4wMzFsLTAuMDE1LC0wLjAyOGExMS43MzYsMTEuNzM2IDAgMCAxIC0xLjMzMywtNS40MDdjMCwtNi4yODQgNC45NCwtMTEuNTAyIDExLjI0MywtMTEuODhsMC40MTQsLTAuMDE1YzIuNTYxLC0wLjA1OCA1LjA2NCwwLjY3MyA3LjIzLDIuMTM2bDAuMDU4LDAuMDM5bDQuMTk3LC0yLjQ0bDAuMDU1LC0wLjAzM2wwLC0wLjA2MmMwLjAwNiwtNi42MzIgLTIuNTkyLC0xMi44NjUgLTcuMzE0LC0xNy41NTFjLTQuNzE2LC00LjY3OSAtMTAuOTkxLC03LjI1NSAtMTcuNjcyLC03LjI1NSIvPgogPC9nPgo8L3N2Zz4=&label=Codecov
+[pypi_version]: https://img.shields.io/pypi/v/atoml.svg?logo=python&logoColor=white
+[python_versions]: https://img.shields.io/pypi/pyversions/atoml.svg?logo=python&logoColor=white
+[github_license]: https://img.shields.io/github/license/frostming/atoml.svg?logo=github&logoColor=white
 
-[![GitHub Release][github_release]](https://github.com/sdispater/tomlkit/releases/)
-[![PyPI Version][pypi_version]](https://pypi.python.org/pypi/tomlkit/)
-[![Python Versions][python_versions]](https://pypi.python.org/pypi/tomlkit/)
-[![License][github_license]](https://github.com/sdispater/tomlkit/blob/master/LICENSE)
-<br>
-[![Travis CI][travisci]](https://travis-ci.com/sdispater/tomlkit)
-[![AppVeyor][appveyor]](https://ci.appveyor.com/project/sdispater/tomlkit)
-[![Codecov][codecov]](https://codecov.io/gh/sdispater/tomlkit)
+[![PyPI Version][pypi_version]](https://pypi.python.org/pypi/atoml/)
+[![Python Versions][python_versions]](https://pypi.python.org/pypi/atoml/)
+[![License][github_license]](https://github.com/frostming/atoml/blob/master/LICENSE)
 
-# TOML Kit - Style-preserving TOML library for Python
+# ATOML - Yet another style-preserving TOML library for Python
 
-TOML Kit is a **1.0.0rc1-compliant** [TOML](https://github.com/toml-lang/toml) library.
+ATOML is a **1.0.0rc1-compliant** [TOML](https://github.com/toml-lang/toml) library.
 
-It includes a parser that preserves all comments, indentations, whitespace and internal element ordering,
-and makes them accessible and editable via an intuitive API.
+It includes a parser that preserves all comments, indentations, whitespace and internal element ordering, and makes them accessible and editable via an intuitive API.
 
 You can also create new TOML documents from scratch using the provided helpers.
 
-Part of the implementation as been adapted, improved and fixed from [Molten](https://github.com/LeopoldArkham/Molten).
+The name comes from the famous Japanese cartoon character **鉄腕アトム(Atom)**.
+
+_**Implementation Change**: Start from 1.0, ATOML is a fork of [tomlkit](https://github.com/sdispater/tomlkit) with less bugs and inconsistency._
 
 ## Usage
 
 ### Parsing
 
-TOML Kit comes with a fast and style-preserving parser to help you access
+ATOML comes with a fast and style-preserving parser to help you access
 the content of TOML files and strings.
 
 ```python
->>> from tomlkit import dumps
->>> from tomlkit import parse  # you can also use loads
+>>> from atoml import dumps
+>>> from atoml import parse  # you can also use loads
 
 >>> content = """[table]
 ... foo = "bar"  # String
@@ -56,12 +47,12 @@ the content of TOML files and strings.
 
 ### Modifying
 
-TOML Kit provides an intuitive API to modify TOML documents.
+ATOML provides an intuitive API to modify TOML documents.
 
 ```python
->>> from tomlkit import dumps
->>> from tomlkit import parse
->>> from tomlkit import table
+>>> from atoml import dumps
+>>> from atoml import parse
+>>> from atoml import table
 
 >>> doc = parse("""[table]
 ... foo = "bar"  # String
@@ -122,10 +113,10 @@ enabled = true
 It can be created with the following code:
 
 ```python
->>> from tomlkit import comment
->>> from tomlkit import document
->>> from tomlkit import nl
->>> from tomlkit import table
+>>> from atoml import comment
+>>> from atoml import document
+>>> from atoml import nl
+>>> from atoml import table
 
 >>> doc = document()
 >>> doc.add(comment("This is a TOML document."))
@@ -155,15 +146,15 @@ It can be created with the following code:
 
 ## Installation
 
-If you are using [Poetry](https://poetry.eustace.io),
-add `tomlkit` to your `pyproject.toml` file by using:
+If you are using [PDM](https://pdm.fming.dev),
+add `atoml` to your `pyproject.toml` file by using:
 
 ```bash
-poetry add tomlkit
+pdm add atoml
 ```
 
 If not, you can use `pip`:
 
 ```bash
-pip install tomlkit
+pip install atoml
 ```

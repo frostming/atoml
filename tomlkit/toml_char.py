@@ -1,18 +1,11 @@
 import string
 
-from ._compat import PY2
-from ._compat import unicode
+from functools import lru_cache
 
 
-if PY2:
-    from functools32 import lru_cache
-else:
-    from functools import lru_cache
-
-
-class TOMLChar(unicode):
+class TOMLChar(str):
     def __init__(self, c):
-        super(TOMLChar, self).__init__()
+        super().__init__()
 
         if len(self) > 1:
             raise ValueError("A TOML character must be of length 1")

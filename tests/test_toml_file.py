@@ -1,8 +1,7 @@
-import io
 import os
 
-from tomlkit.toml_document import TOMLDocument
-from tomlkit.toml_file import TOMLFile
+from atoml.toml_document import TOMLDocument
+from atoml.toml_file import TOMLFile
 
 
 def test_toml_file(example):
@@ -18,8 +17,8 @@ def test_toml_file(example):
     toml.write(content)
 
     try:
-        with io.open(toml_file, encoding="utf-8") as f:
+        with open(toml_file, encoding="utf-8") as f:
             assert original_content == f.read()
     finally:
-        with io.open(toml_file, "w", encoding="utf-8") as f:
+        with open(toml_file, "w", encoding="utf-8") as f:
             assert f.write(original_content)

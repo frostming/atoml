@@ -4,23 +4,19 @@ from typing import Tuple
 
 from ._utils import parse_rfc3339
 from .container import Container
-from .items import AoT
-from .items import Array
-from .items import Bool
-from .items import Comment
-from .items import Date
-from .items import DateTime
-from .items import Float
-from .items import InlineTable
-from .items import Integer
+from .items import (
+    AoT,
+    Array,
+    Bool,
+    Comment,
+    Date,
+    DateTime,
+    Float,
+    InlineTable,
+    Integer,
+)
 from .items import Item as _Item
-from .items import Key
-from .items import String
-from .items import Table
-from .items import Time
-from .items import Trivia
-from .items import Whitespace
-from .items import item
+from .items import Key, String, Table, Time, Trivia, Whitespace, item
 from .parser import Parser
 from .toml_document import TOMLDocument as _TOMLDocument
 
