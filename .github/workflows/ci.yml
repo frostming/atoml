@@ -30,7 +30,7 @@ jobs:
       - name: Install packages
         run: pdm install
       - name: Run Tests
-        run: pdm run pytest -n auto --cov atoml --cov-report=xml tests
+        run: pdm run pytest --cov atoml --cov-report=xml tests
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
