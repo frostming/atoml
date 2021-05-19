@@ -1209,6 +1209,7 @@ class Parser:
 
             self.mark()
 
+            table_name = ""
             while self._current != "]" and self.inc():
                 table_name = self.extract()
 
