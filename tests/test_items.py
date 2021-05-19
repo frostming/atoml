@@ -141,9 +141,14 @@ def test_array_behaves_like_a_list():
     assert a == [1, 2, 4]
     assert a.as_string() == "[1, 2, 4]"
 
-    del a[-1]
+    assert a.pop() == 4
     assert a == [1, 2]
     assert a.as_string() == "[1, 2]"
+
+    a[0] = 4
+    assert a == [4, 2]
+    a[-2] = 0
+    assert a == [0, 2]
 
     del a[-2]
     assert a == [2]
@@ -153,7 +158,7 @@ def test_array_behaves_like_a_list():
     assert a == []
     assert a.as_string() == "[]"
 
-    content = """a = [1, 2] # Comment
+    content = """a = [1, 2,] # Comment
 """
     doc = parse(content)
 
@@ -162,7 +167,7 @@ def test_array_behaves_like_a_list():
     assert doc["a"] == [1, 2, 3, 4]
     assert (
         doc.as_string()
-        == """a = [1, 2, 3, 4] # Comment
+        == """a = [1, 2,3, 4] # Comment
 """
     )
 
@@ -411,6 +416,16 @@ bar = "baz"
         t.as_string()
         == """foo = "bar"
 bar = "boom"
+"""
+    )
+
+    assert t.get("bar") == "boom"
+    assert t.setdefault("foobar", "fuzz") == "fuzz"
+    assert (
+        t.as_string()
+        == """foo = "bar"
+bar = "boom"
+foobar = "fuzz"
 """
     )
 

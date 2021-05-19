@@ -1,10 +1,21 @@
 import re
 import string
 
+from collections.abc import MutableMapping, MutableSequence
 from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+    overload,
+)
 
 from ._compat import PY38, decode
 from ._utils import escape_string
@@ -777,20 +788,21 @@ class Time(Item, time):
         )
 
 
-class Array(Item, list):
+class Array(Item, MutableSequence, list):
     """
     An array literal
     """
 
     def __init__(self, value: list, trivia: Trivia, multiline: bool = False) -> None:
         super().__init__(trivia)
-
+        self._index_map: Dict[int, int] = {}
         list.__init__(
             self, [v.value for v in value if not isinstance(v, (Whitespace, Comment))]
         )
 
         self._value = value
         self._multiline = multiline
+        self._reindex()
 
     @property
     def discriminant(self) -> int:
@@ -818,66 +830,103 @@ class Array(Item, list):
 
         return s
 
-    def append(self, _item: Any) -> None:
-        if self._value:
-            self._value.append(Whitespace(", "))
+    def _reindex(self) -> None:
+        self._index_map.clear()
+        index = 0
+        for i, v in enumerate(self._value):
+            if isinstance(v, (Whitespace, Comment)):
+                continue
+            self._index_map[index] = i
+            index += 1
 
-        it = item(_item)
-        super().append(it.value)
-
-        self._value.append(it)
-
-    def clear(self):
-        super().clear()
+    def clear(self) -> None:
+        list.clear(self)
 
         self._value.clear()
+        self._index_map.clear()
 
-    def __iadd__(self, other: list) -> "Array":
-        if not isinstance(other, list):
-            return NotImplemented
+    def __len__(self) -> int:
+        return list.__len__(self)
 
-        for v in other:
-            self.append(v)
+    def __getitem__(self, key: Union[int, slice]) -> Any:
+        return list.__getitem__(self, key)
 
-        return self
+    def __setitem__(self, key: Union[int, slice], value: Any) -> Any:
+        it = item(value)
+        list.__setitem__(self, key, it.value)
+        if isinstance(key, slice):
+            raise ValueError("slice assignment is not supported")
+        if key < 0:
+            key += len(self)
+        self._value[self._index_map[key]] = it
 
-    def __delitem__(self, key):
-        super().__delitem__(key)
+    def insert(self, pos: int, value: Any) -> None:
+        it = item(value)
+        length = len(self)
+        if not isinstance(it, (Comment, Whitespace)):
+            list.insert(self, pos, it.value)
+        if pos < 0:
+            pos += length
 
-        j = 0 if key >= 0 else -1
-        for i, v in enumerate(self._value if key >= 0 else reversed(self._value)):
-            if key < 0:
-                i = -i - 1
+        if 0 <= pos < length:
+            try:
+                idx = self._index_map[pos]
+            except KeyError:
+                raise IndexError("list index out of range")
+        else:
+            idx = len(self._value) if pos >= length else pos
+        items = [it]
+        if self._value and idx < len(self._value):
+            items.append(Whitespace(", "))
+        elif (
+            self._value
+            and idx >= len(self._value)
+            and not (
+                isinstance(self._value[-1], Whitespace)
+                and self._value[-1].s.strip() == ","
+            )
+        ):
+            items.insert(0, Whitespace(", "))
+        self._value[idx:idx] = items
 
-            if isinstance(v, (Comment, Whitespace)):
-                continue
+        self._reindex()
 
-            if j == key:
-                del self._value[i]
+    def __delitem__(self, key: Union[int, slice]):
+        length = len(self)
+        list.__delitem__(self, key)
 
-                if i < 0 and abs(i) > len(self._value):
-                    i += 1
+        def get_indice_to_remove(idx: int) -> Iterable[int]:
+            try:
+                real_idx = self._index_map[idx]
+            except KeyError:
+                raise IndexError("list index out of range")
+            yield real_idx
+            for i in range(real_idx + 1, len(self._value)):
+                if isinstance(self._value[i], Whitespace):
+                    yield i
 
-                if i < len(self._value) - 1 and isinstance(self._value[i], Whitespace):
-                    del self._value[i]
-
-                break
-
-            j += 1 if key >= 0 else -1
+        indexes = set()
+        if isinstance(key, slice):
+            for idx in range(key.start or 0, key.end or length, key.step or 1):
+                indexes.update(get_indice_to_remove(idx))
+        else:
+            indexes.update(get_indice_to_remove(length + key if key < 0 else key))
+        for i in sorted(indexes, reverse=True):
+            del self._value[i]
+        while self._value and isinstance(self._value[-1], Whitespace):
+            self._value.pop()
+        self._reindex()
 
     def __str__(self):
         return str(
             [v.value for v in self._value if not isinstance(v, (Whitespace, Comment))]
         )
 
-    def __repr__(self):
-        return str(self)
-
     def _getstate(self, protocol=3):
         return self._value, self._trivia
 
 
-class Table(Item, dict):
+class Table(Item, MutableMapping, dict):
     """
     A table literal.
     """
@@ -901,7 +950,7 @@ class Table(Item, dict):
 
         for k, v in self._value.body:
             if k is not None:
-                super().__setitem__(k.key, v)
+                dict.__setitem__(self, k.key, v)
 
     @property
     def value(self) -> "container.Container":
@@ -935,7 +984,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -962,7 +1011,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         return self
 
@@ -973,7 +1022,7 @@ class Table(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__delitem__(key)
+            dict.__delitem__(self, key)
 
         return self
 
@@ -1003,24 +1052,11 @@ class Table(Item, dict):
 
         return self
 
-    def keys(self) -> Iterator[str]:
-        yield from self._value.keys()
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value)
 
-    def values(self) -> Iterator[Item]:
-        yield from self._value.values()
-
-    def items(self) -> Iterator[Item]:
-        yield from self._value.items()
-
-    def update(self, other: dict) -> None:
-        for k, v in other.items():
-            self[k] = v
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        return self._value.get(key, default)
-
-    def __contains__(self, key: Union[Key, str]) -> bool:
-        return key in self._value
+    def __len__(self) -> int:
+        return len(self._value)
 
     def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
@@ -1032,7 +1068,7 @@ class Table(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super().__setitem__(key, value)
+            dict.__setitem__(self, key, value)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
@@ -1050,13 +1086,14 @@ class Table(Item, dict):
     def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
-    def __repr__(self):
-        return super().__repr__()
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
 
     def __str__(self):
         return str(self.value)
 
-    def _getstate(self, protocol=3):
+    def _getstate(self, protocol: int = 3) -> tuple:
         return (
             self._value,
             self._trivia,
@@ -1067,7 +1104,7 @@ class Table(Item, dict):
         )
 
 
-class InlineTable(Item, dict):
+class InlineTable(Item, MutableMapping, dict):
     """
     An inline table literal.
     """
@@ -1082,7 +1119,7 @@ class InlineTable(Item, dict):
 
         for k, v in self._value.body:
             if k is not None:
-                super().__setitem__(k.key, v)
+                dict.__setitem__(self, k.key, v)
 
     @property
     def discriminant(self) -> int:
@@ -1111,7 +1148,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__setitem__(key, _item)
+            dict.__setitem__(self, key, _item)
 
         return self
 
@@ -1122,7 +1159,7 @@ class InlineTable(Item, dict):
             key = key.key
 
         if key is not None:
-            super().__delitem__(key)
+            dict.__delitem__(self, key)
 
         return self
 
@@ -1158,25 +1195,6 @@ class InlineTable(Item, dict):
 
         return buf
 
-    def keys(self) -> Iterator[str]:
-        yield from self._value.keys()
-
-    def values(self) -> Iterator[Item]:
-        yield from self._value.values()
-
-    def items(self) -> Iterator[Item]:
-        yield from self._value.items()
-
-    def update(self, other: dict) -> None:
-        for k, v in other.items():
-            self[k] = v
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        return self._value.get(key, default)
-
-    def __contains__(self, key: Union[Key, str]) -> bool:
-        return key in self._value
-
     def __getitem__(self, key: Union[Key, str]) -> Item:
         return self._value[key]
 
@@ -1187,7 +1205,7 @@ class InlineTable(Item, dict):
         self._value[key] = value
 
         if key is not None:
-            super().__setitem__(key, value)
+            dict.__setitem__(self, key, value)
         if value.trivia.comment:
             value.trivia.comment = ""
 
@@ -1207,10 +1225,17 @@ class InlineTable(Item, dict):
     def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
 
-    def __repr__(self):
-        return super().__repr__()
+    def __len__(self) -> int:
+        return len(self._value)
 
-    def _getstate(self, protocol=3):
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value)
+
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
+
+    def _getstate(self, protocol: int = 3) -> tuple:
         return (self._value, self._trivia)
 
 
@@ -1256,7 +1281,7 @@ class String(str, Item):
         return self._t, str(self), self._original, self._trivia
 
 
-class AoT(Item, list):
+class AoT(Item, MutableSequence, list):
     """
     An array of table literal
     """
@@ -1265,7 +1290,7 @@ class AoT(Item, list):
         self, body: List[Table], name: Optional[str] = None, parsed: bool = False
     ) -> None:
         self.name = name
-        self._body = []
+        self._body: List[Table] = []
         self._parsed = parsed
 
         super().__init__(Trivia(trail=""))
@@ -1285,25 +1310,55 @@ class AoT(Item, list):
     def value(self) -> List[Dict[Any, Any]]:
         return [v.value for v in self._body]
 
-    def append(self, table: Table) -> Table:
+    def __len__(self) -> int:
+        return len(self._body)
+
+    @overload
+    def __getitem__(self, key: slice) -> List[Table]:
+        ...
+
+    @overload
+    def __getitem__(self, key: int) -> Table:
+        ...
+
+    def __getitem__(self, key):
+        return self._body[key]
+
+    def __setitem__(self, key: Union[slice, int], value: Any) -> None:
+        raise NotImplementedError
+
+    def __delitem__(self, key: Union[slice, int]) -> None:
+        del self._body[key]
+        list.__delitem__(self, key)
+
+    def insert(self, index: int, value: Table) -> None:
+        if not isinstance(value, Table):
+            raise ValueError(f"Unsupported insert value type: {type(value)}")
+        length = len(self)
+        if index < 0:
+            index += length
+        if index < 0:
+            index = 0
+        elif index >= length:
+            index = length
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if m:
             indent = m.group(1)
 
-            m = re.match("(?s)^([^ ]*)(.*)$", table.trivia.indent)
+            m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
             if not m:
-                table.trivia.indent = indent
+                value.trivia.indent = indent
             else:
-                table.trivia.indent = m.group(1) + indent + m.group(2)
-
-        if not self._parsed and "\n" not in table.trivia.indent and self._body:
-            table.trivia.indent = "\n" + table.trivia.indent
-
-        self._body.append(table)
-
-        super().append(table)
-
-        return table
+                value.trivia.indent = m.group(1) + indent + m.group(2)
+        prev_table = self._body[index - 1] if 0 < index and length else None
+        next_table = self._body[index + 1] if index < length - 1 else None
+        if not self._parsed:
+            if prev_table and "\n" not in value.trivia.indent:
+                value.trivia.indent = "\n" + value.trivia.indent
+            if next_table and "\n" not in next_table.trivia.indent:
+                next_table.trivia.indent = "\n" + next_table.trivia.indent
+        self._body.insert(index, value)
+        list.insert(self, index, value)
 
     def as_string(self) -> str:
         b = ""

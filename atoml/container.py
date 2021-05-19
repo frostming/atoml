@@ -1,5 +1,6 @@
 import copy
 
+from collections.abc import MutableMapping
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from ._compat import decode
@@ -12,7 +13,7 @@ from .items import item as _item
 _NOT_SET = object()
 
 
-class Container(dict):
+class Container(MutableMapping, dict):
     """
     A container for items within a TOMLDocument.
     """
@@ -230,7 +231,7 @@ class Container(dict):
             self._table_keys.append(key)
 
         if key is not None:
-            super().__setitem__(key.key, item.value)
+            dict.__setitem__(self, key.key, item.value)
 
         return self
 
@@ -248,7 +249,7 @@ class Container(dict):
         else:
             self._body[idx] = (None, Null())
 
-        super().__delitem__(key.key)
+        dict.__delitem__(self, key.key)
 
         return self
 
@@ -295,7 +296,7 @@ class Container(dict):
         self._body.insert(idx + 1, (other_key, item))
 
         if key is not None:
-            super().__setitem__(other_key.key, item.value)
+            dict.__setitem__(self, other_key.key, item.value)
 
         return self
 
@@ -335,7 +336,7 @@ class Container(dict):
         self._body.insert(idx, (key, item))
 
         if key is not None:
-            super().__setitem__(key.key, item.value)
+            dict.__setitem__(self, key.key, item.value)
 
         return self
 
@@ -492,62 +493,13 @@ class Container(dict):
             item.trivia.trail,
         )
 
+    def __len__(self) -> int:
+        return dict.__len__(self)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(dict.keys(self))
+
     # Dictionary methods
-
-    def keys(self) -> Iterator[str]:
-        return super().keys()
-
-    def values(self) -> Iterator[Item]:
-        for k in self.keys():
-            yield self[k]
-
-    def items(self) -> Iterator[Item]:
-        for k, v in self.value.items():
-            if k is None:
-                continue
-
-            yield k, v
-
-    def update(self, other: dict) -> None:
-        for k, v in other.items():
-            self[k] = v
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        if not isinstance(key, Key):
-            key = Key(key)
-
-        if key not in self:
-            return default
-
-        return self[key]
-
-    def pop(self, key, default=_NOT_SET):
-        try:
-            value = self[key]
-        except KeyError:
-            if default is _NOT_SET:
-                raise
-
-            return default
-
-        del self[key]
-
-        return value
-
-    def setdefault(
-        self, key: Union[Key, str], default: Any = None
-    ) -> Union[Item, "Container"]:
-        if key not in self:
-            self[key] = default
-
-        return self[key]
-
-    def __contains__(self, key: Union[Key, str]) -> bool:
-        if not isinstance(key, Key):
-            key = Key(key)
-
-        return key in self._map
-
     def __getitem__(self, key: Union[Key, str]) -> Union[Item, "Container"]:
         if not isinstance(key, Key):
             key = Key(key)
@@ -576,6 +528,10 @@ class Container(dict):
 
     def __delitem__(self, key: Union[Key, str]) -> None:
         self.remove(key)
+
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
 
     def _replace(
         self, key: Union[Key, str], new_key: Union[Key, str], value: Item
@@ -608,7 +564,7 @@ class Container(dict):
 
         self._map[new_key] = self._map.pop(k)
         if new_key != k:
-            super().__delitem__(k)
+            dict.__delitem__(self, k)
 
         if isinstance(self._map[new_key], tuple):
             self._map[new_key] = self._map[new_key][0]
@@ -628,13 +584,10 @@ class Container(dict):
 
         self._body[idx] = (new_key, value)
 
-        super().__setitem__(new_key.key, value.value)
+        dict.__setitem__(self, new_key.key, value.value)
 
     def __str__(self) -> str:
         return str(self.value)
-
-    def __repr__(self) -> str:
-        return super().__repr__()
 
     def __eq__(self, other: dict) -> bool:
         if not isinstance(other, dict):
@@ -665,8 +618,8 @@ class Container(dict):
 
     def __copy__(self) -> "Container":
         c = self.__class__(self._parsed)
-        for k, v in super().copy().items():
-            super(Container, c).__setitem__(k, v)
+        for k, v in dict.items(self):
+            dict.__setitem__(c, k, v)
 
         c._body += self.body
         c._map.update(self._map)
@@ -674,10 +627,10 @@ class Container(dict):
         return c
 
 
-class OutOfOrderTableProxy(dict):
+class OutOfOrderTableProxy(MutableMapping, dict):
     def __init__(self, container: Container, indices: tuple) -> None:
         self._container = container
-        self._internal_container = Container(self._container.parsing)
+        self._internal_container = Container(True)
         self._tables = []
         self._tables_map = {}
         self._map = {}
@@ -692,12 +645,12 @@ class OutOfOrderTableProxy(dict):
                     self._internal_container.append(k, v)
                     self._tables_map[k] = table_idx
                     if k is not None:
-                        super().__setitem__(k.key, v)
+                        dict.__setitem__(self, k.key, v)
             else:
                 self._internal_container.append(key, item)
                 self._map[key] = i
                 if key is not None:
-                    super().__setitem__(key.key, item)
+                    dict.__setitem__(self, key.key, item)
 
     @property
     def value(self):
@@ -722,8 +675,9 @@ class OutOfOrderTableProxy(dict):
         else:
             self._container[key] = item
 
+        self._internal_container[key] = item
         if key is not None:
-            super().__setitem__(key, item)
+            dict.__setitem__(self, key, item)
 
     def __delitem__(self, key: Union[Key, str]) -> None:
         if key in self._map:
@@ -737,44 +691,18 @@ class OutOfOrderTableProxy(dict):
             raise NonExistentKey(key)
 
         del self._internal_container[key]
+        if key is not None:
+            dict.__delitem__(self, key)
 
-    def keys(self):
-        return self._internal_container.keys()
+    def __iter__(self) -> Iterator[str]:
+        return iter(dict.keys(self))
 
-    def values(self):
-        return self._internal_container.values()
-
-    def items(self) -> Iterator[Item]:
-        return self._internal_container.items()
-
-    def update(self, other: dict) -> None:
-        self._internal_container.update(other)
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        return self._internal_container.get(key, default=default)
-
-    def pop(self, key, default=_NOT_SET):
-        return self._internal_container.pop(key, default=default)
-
-    def setdefault(
-        self, key: Union[Key, str], default: Any = None
-    ) -> Union[Item, "Container"]:
-        return self._internal_container.setdefault(key, default=default)
-
-    def __contains__(self, key):
-        return key in self._internal_container
-
-    def __str__(self):
-        return str(self._internal_container)
-
-    def __repr__(self):
-        return repr(self._internal_container)
-
-    def __eq__(self, other: dict) -> bool:
-        if not isinstance(other, dict):
-            return NotImplemented
-
-        return self._internal_container == other
+    def __len__(self) -> int:
+        return dict.__len__(self)
 
     def __getattr__(self, attribute):
         return getattr(self._internal_container, attribute)
+
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default=default)
+        return self[key]
