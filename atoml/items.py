@@ -1065,11 +1065,14 @@ class Table(Item, MutableMapping, dict):
         if not isinstance(value, Item):
             value = item(value)
 
+        is_replace = key in self
         self._value[key] = value
 
         if key is not None:
             dict.__setitem__(self, key, value)
 
+        if is_replace:
+            return
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
             return
