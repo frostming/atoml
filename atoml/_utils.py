@@ -97,7 +97,7 @@ _escaped = {"b": "\b", "t": "\t", "n": "\n", "f": "\f", "r": "\r", '"': '"', "\\
 _escapes = {v: k for k, v in _escaped.items()}
 
 
-def escape_string(s):
+def escape_string(s: str) -> str:
     s = decode(s)
 
     res = []
@@ -125,7 +125,7 @@ def escape_string(s):
     return "".join(res)
 
 
-def merge_dicts(d1, d2):
+def merge_dicts(d1: dict, d2: dict) -> dict:
     for k, v in d2.items():
         if k in d1 and isinstance(d1[k], dict) and isinstance(v, Mapping):
             merge_dicts(d1[k], v)
