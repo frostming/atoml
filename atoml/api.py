@@ -1,6 +1,6 @@
 import datetime as _datetime
 
-from typing import Tuple
+from typing import IO, Tuple
 
 from ._utils import parse_rfc3339
 from .container import Container
@@ -38,6 +38,20 @@ def dumps(data: _TOMLDocument, sort_keys: bool = False) -> str:
         data = item(data, _sort_keys=sort_keys)
 
     return data.as_string()
+
+
+def load(fp: IO) -> _TOMLDocument:
+    """
+    Load toml document from a file-like object.
+    """
+    return parse(fp.read())
+
+
+def dump(data: _TOMLDocument, fp: IO[str], *, sort_keys: bool = False) -> None:
+    """
+    Dump a TOMLDocument into a writable file stream.
+    """
+    fp.write(dumps(data, sort_keys=sort_keys))
 
 
 def parse(string: str) -> _TOMLDocument:

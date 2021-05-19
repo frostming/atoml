@@ -160,3 +160,18 @@ If not, you can use `pip`:
 ```bash
 pip install atoml
 ```
+
+## Migrate from TOMLKit
+
+ATOML comes with full compatible API with TOMLKit, you can easily do a Replace All of `tomlkit` to `atoml` or:
+
+```python
+import atoml as tomlkit
+```
+
+ATOML differs from TOMLkit in the following ways:
+
+- Python 3.6+ support only
+- Tables and arrays are subclasses of `MutableMapping` and `MutableSequence` respectively, to reduce some inconsistency between the container behaviors
+- `load` and `dump` methods added
+- [Less bugs](https://github.com/frostming/atoml/issues/9)

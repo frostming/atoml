@@ -1,4 +1,6 @@
+import io
 import json
+import os
 
 from datetime import date, datetime, time
 
@@ -6,7 +8,7 @@ import pytest
 
 import atoml
 
-from atoml import dumps, loads, parse
+from atoml import dump, dumps, load, loads, parse
 from atoml.exceptions import (
     InvalidCharInStringError,
     InvalidControlChar,
@@ -59,6 +61,30 @@ def json_serial(obj):
 def test_parse_can_parse_valid_toml_files(example, example_name):
     assert isinstance(parse(example(example_name)), TOMLDocument)
     assert isinstance(loads(example(example_name)), TOMLDocument)
+
+
+@pytest.mark.parametrize(
+    "example_name",
+    [
+        "example",
+        "fruit",
+        "hard",
+        "sections_with_same_start",
+        "pyproject",
+        "0.5.0",
+        "test",
+        "newline_in_strings",
+        "preserve_quotes_in_string",
+        "string_slash_whitespace_newline",
+        "table_names",
+    ],
+)
+def test_load_from_file_object(example_name):
+    with open(
+        os.path.join(os.path.dirname(__file__), "examples", example_name + ".toml"),
+        encoding="utf-8",
+    ) as fp:
+        assert isinstance(load(fp), TOMLDocument)
 
 
 @pytest.mark.parametrize("example_name", ["0.5.0", "pyproject", "table_names"])
@@ -124,6 +150,13 @@ def test_a_raw_dict_can_be_dumped():
     s = dumps({"foo": "bar"})
 
     assert s == 'foo = "bar"\n'
+
+
+def test_dump_to_file_object():
+    doc = {"foo": "bar"}
+    fp = io.StringIO()
+    dump(doc, fp)
+    assert fp.getvalue() == 'foo = "bar"\n'
 
 
 def test_integer():
