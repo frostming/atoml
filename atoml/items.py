@@ -5,7 +5,17 @@ from collections.abc import MutableMapping, MutableSequence
 from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+    overload,
+)
 
 from ._compat import PY38, decode
 from ._utils import escape_string
@@ -1271,7 +1281,7 @@ class String(str, Item):
         return self._t, str(self), self._original, self._trivia
 
 
-class AoT(Item, list):
+class AoT(Item, MutableSequence, list):
     """
     An array of table literal
     """
@@ -1280,7 +1290,7 @@ class AoT(Item, list):
         self, body: List[Table], name: Optional[str] = None, parsed: bool = False
     ) -> None:
         self.name = name
-        self._body = []
+        self._body: List[Table] = []
         self._parsed = parsed
 
         super().__init__(Trivia(trail=""))
@@ -1300,25 +1310,55 @@ class AoT(Item, list):
     def value(self) -> List[Dict[Any, Any]]:
         return [v.value for v in self._body]
 
-    def append(self, table: Table) -> Table:
+    def __len__(self) -> int:
+        return len(self._body)
+
+    @overload
+    def __getitem__(self, key: slice) -> List[Table]:
+        ...
+
+    @overload
+    def __getitem__(self, key: int) -> Table:
+        ...
+
+    def __getitem__(self, key):
+        return self._body[key]
+
+    def __setitem__(self, key: Union[slice, int], value: Any) -> None:
+        raise NotImplementedError
+
+    def __delitem__(self, key: Union[slice, int]) -> None:
+        del self._body[key]
+        list.__delitem__(self, key)
+
+    def insert(self, index: int, value: Table) -> None:
+        if not isinstance(value, Table):
+            raise ValueError(f"Unsupported insert value type: {type(value)}")
+        length = len(self)
+        if index < 0:
+            index += length
+        if index < 0:
+            index = 0
+        elif index >= length:
+            index = length
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if m:
             indent = m.group(1)
 
-            m = re.match("(?s)^([^ ]*)(.*)$", table.trivia.indent)
+            m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
             if not m:
-                table.trivia.indent = indent
+                value.trivia.indent = indent
             else:
-                table.trivia.indent = m.group(1) + indent + m.group(2)
-
-        if not self._parsed and "\n" not in table.trivia.indent and self._body:
-            table.trivia.indent = "\n" + table.trivia.indent
-
-        self._body.append(table)
-
-        super().append(table)
-
-        return table
+                value.trivia.indent = m.group(1) + indent + m.group(2)
+        prev_table = self._body[index - 1] if 0 < index and length else None
+        next_table = self._body[index + 1] if index < length - 1 else None
+        if not self._parsed:
+            if prev_table and "\n" not in value.trivia.indent:
+                value.trivia.indent = "\n" + value.trivia.indent
+            if next_table and "\n" not in next_table.trivia.indent:
+                next_table.trivia.indent = "\n" + next_table.trivia.indent
+        self._body.insert(index, value)
+        list.insert(self, index, value)
 
     def as_string(self) -> str:
         b = ""
