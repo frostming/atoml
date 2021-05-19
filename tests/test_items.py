@@ -141,9 +141,14 @@ def test_array_behaves_like_a_list():
     assert a == [1, 2, 4]
     assert a.as_string() == "[1, 2, 4]"
 
-    del a[-1]
+    assert a.pop() == 4
     assert a == [1, 2]
     assert a.as_string() == "[1, 2]"
+
+    a[0] = 4
+    assert a == [4, 2]
+    a[-2] = 0
+    assert a == [0, 2]
 
     del a[-2]
     assert a == [2]
@@ -411,6 +416,16 @@ bar = "baz"
         t.as_string()
         == """foo = "bar"
 bar = "boom"
+"""
+    )
+
+    assert t.get("bar") == "boom"
+    assert t.setdefault("foobar", "fuzz") == "fuzz"
+    assert (
+        t.as_string()
+        == """foo = "bar"
+bar = "boom"
+foobar = "fuzz"
 """
     )
 
