@@ -615,3 +615,63 @@ a = "b"
 """
 
     assert expected == doc.as_string()
+
+
+def test_updating_nested_value_keeps_correct_indent():
+    content = """
+[Key1]
+      [key1.Key2]
+      Value1 = 10
+      Value2 = 30
+"""
+
+    doc = parse(content)
+    doc["key1"]["Key2"]["Value1"] = 20
+
+    expected = """
+[Key1]
+      [key1.Key2]
+      Value1 = 20
+      Value2 = 30
+"""
+
+    assert doc.as_string() == expected
+
+
+def test_repr():
+    content = """
+namespace.key1 = "value1"
+namespace.key2 = "value2"
+[tool.poetry.foo]
+option = "test"
+[tool.poetry.bar]
+option = "test"
+inline = {"foo" = "bar", "bar" = "baz"}
+"""
+
+    doc = parse(content)
+
+    assert (
+        repr(doc)
+        == "{'namespace': {'key1': 'value1', 'key2': 'value2'}, 'tool': {'poetry': {'foo': {'option': 'test'}, 'bar': {'option': 'test', 'inline': {'foo': 'bar', 'bar': 'baz'}}}}}"
+    )
+
+    assert (
+        repr(doc["tool"])
+        == "{'poetry': {'foo': {'option': 'test'}, 'bar': {'option': 'test', 'inline': {'foo': 'bar', 'bar': 'baz'}}}}"
+    )
+
+    assert repr(doc["namespace"]) == "{'key1': 'value1', 'key2': 'value2'}"
+
+
+def test_deepcopy():
+    content = """
+[tool]
+name = "foo"
+[tool.project.section]
+option = "test"
+"""
+    doc = parse(content)
+    copied = copy.deepcopy(doc)
+    assert copied == doc
+    assert copied.as_string() == content

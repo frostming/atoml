@@ -1096,6 +1096,9 @@ class Table(Item, MutableMapping, dict):
     def __str__(self):
         return str(self.value)
 
+    def __repr__(self) -> str:
+        return repr(self.value)
+
     def _getstate(self, protocol: int = 3) -> tuple:
         return (
             self._value,
@@ -1233,6 +1236,9 @@ class InlineTable(Item, MutableMapping, dict):
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._value)
+
+    def __repr__(self) -> str:
+        return repr(self.value)
 
     def setdefault(self, key: Union[Key, str], default: Any) -> Any:
         super().setdefault(key, default=default)

@@ -587,6 +587,9 @@ class Container(MutableMapping, dict):
     def __str__(self) -> str:
         return str(self.value)
 
+    def __repr__(self) -> str:
+        return repr(self.value)
+
     def __eq__(self, other: dict) -> bool:
         if not isinstance(other, dict):
             return NotImplemented

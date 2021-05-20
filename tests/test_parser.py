@@ -1,6 +1,6 @@
 import pytest
 
-from atoml.exceptions import InternalParserError
+from atoml.exceptions import EmptyTableNameError, InternalParserError
 from atoml.items import StringType
 from atoml.parser import Parser
 
@@ -13,3 +13,18 @@ def test_parser_should_raise_an_internal_error_if_parsing_wrong_type_of_string()
 
     assert e.value.line == 1
     assert e.value.col == 0
+
+
+def test_parser_should_raise_an_error_for_empty_tables():
+    content = """
+[one]
+[]
+"""
+
+    parser = Parser(content)
+
+    with pytest.raises(EmptyTableNameError) as e:
+        parser.parse()
+
+    assert e.value.line == 3
+    assert e.value.col == 1
