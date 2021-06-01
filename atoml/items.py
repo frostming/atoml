@@ -878,15 +878,18 @@ class Array(Item, MutableSequence, list):
         items = [it]
         if self._value and idx < len(self._value):
             items.append(Whitespace(", "))
-        elif (
-            self._value
-            and idx >= len(self._value)
-            and not (
-                isinstance(self._value[-1], Whitespace)
-                and self._value[-1].s.strip() == ","
-            )
-        ):
-            items.insert(0, Whitespace(", "))
+        elif self._value and idx >= len(self._value):
+            # Append to the last
+            i = len(self._value) - 1
+            while i and isinstance(self._value[i], (Comment, Whitespace)):
+                if (
+                    isinstance(self._value[i], Whitespace)
+                    and self._value[i].s.strip() == ","
+                ):
+                    break
+                i -= 1
+            else:
+                items.insert(0, Whitespace(", "))
         self._value[idx:idx] = items
 
         self._reindex()

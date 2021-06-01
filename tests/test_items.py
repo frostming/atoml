@@ -195,6 +195,22 @@ def test_array_multiline():
     assert "[]" == t.as_string()
 
 
+def test_array_multiline_append():
+    doc = parse(
+        """\
+a = [
+    "abc",
+]"""
+    )
+    doc["a"].multiline(True).append("def")
+    expected = """\
+a = [
+    "abc",
+    "def",
+]"""
+    assert expected == doc.as_string()
+
+
 def test_dicts_are_converted_to_tables():
     t = item({"foo": {"bar": "baz"}})
 
