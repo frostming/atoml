@@ -1,5 +1,6 @@
 import datetime as _datetime
 
+from collections.abc import Mapping
 from typing import IO, Tuple
 
 from ._utils import parse_rfc3339
@@ -18,10 +19,10 @@ from .items import (
 from .items import Item as _Item
 from .items import Key, String, Table, Time, Trivia, Whitespace, item
 from .parser import Parser
-from .toml_document import TOMLDocument as _TOMLDocument
+from .toml_document import TOMLDocument
 
 
-def loads(string: str) -> _TOMLDocument:
+def loads(string: str) -> TOMLDocument:
     """
     Parses a string into a TOMLDocument.
 
@@ -30,42 +31,47 @@ def loads(string: str) -> _TOMLDocument:
     return parse(string)
 
 
-def dumps(data: _TOMLDocument, sort_keys: bool = False) -> str:
+def dumps(data: Mapping, sort_keys: bool = False) -> str:
     """
     Dumps a TOMLDocument into a string.
     """
-    if not isinstance(data, _TOMLDocument) and isinstance(data, dict):
-        data = item(data, _sort_keys=sort_keys)
+    if not isinstance(data, Container) and isinstance(data, Mapping):
+        data = item(dict(data), _sort_keys=sort_keys)
 
-    return data.as_string()
+    if hasattr(data, "as_string"):
+        # This condition should be True for all type safe invocations of this
+        # function, since Container implements `as_string`.
+        return data.as_string()  # type: ignore[attr-defined]
+
+    raise TypeError(f"Expecting Mapping or TOML Container, {type(data)} given")
 
 
-def load(fp: IO) -> _TOMLDocument:
+def load(fp: IO) -> TOMLDocument:
     """
     Load toml document from a file-like object.
     """
     return parse(fp.read())
 
 
-def dump(data: _TOMLDocument, fp: IO[str], *, sort_keys: bool = False) -> None:
+def dump(data: Mapping, fp: IO[str], *, sort_keys: bool = False) -> None:
     """
     Dump a TOMLDocument into a writable file stream.
     """
     fp.write(dumps(data, sort_keys=sort_keys))
 
 
-def parse(string: str) -> _TOMLDocument:
+def parse(string: str) -> TOMLDocument:
     """
     Parses a string into a TOMLDocument.
     """
     return Parser(string).parse()
 
 
-def document() -> _TOMLDocument:
+def document() -> TOMLDocument:
     """
     Returns a new TOMLDocument instance.
     """
-    return _TOMLDocument()
+    return TOMLDocument()
 
 
 # Items

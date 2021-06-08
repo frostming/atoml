@@ -1,4 +1,5 @@
 from .api import (
+    TOMLDocument,
     aot,
     array,
     boolean,
