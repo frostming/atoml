@@ -3,6 +3,7 @@ import json
 import os
 
 from datetime import date, datetime, time
+from types import MappingProxyType
 
 import pytest
 
@@ -150,6 +151,16 @@ def test_a_raw_dict_can_be_dumped():
     s = dumps({"foo": "bar"})
 
     assert s == 'foo = "bar"\n'
+
+
+def test_mapping_types_can_be_dumped():
+    x = MappingProxyType({"foo": "bar"})
+    assert dumps(x) == 'foo = "bar"\n'
+
+
+def test_dumps_weird_object():
+    with pytest.raises(TypeError):
+        dumps(object())
 
 
 def test_dump_to_file_object():
