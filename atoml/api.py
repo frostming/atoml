@@ -38,12 +38,13 @@ def dumps(data: Mapping, sort_keys: bool = False) -> str:
     if not isinstance(data, Container) and isinstance(data, Mapping):
         data = item(dict(data), _sort_keys=sort_keys)
 
-    if hasattr(data, "as_string"):
-        # This condition should be True for all type safe invocations of this
-        # function, since Container implements `as_string`.
+    try:
+        # data should be a `Container` (and therefore implement `as_string`)
+        # for all type safe invocations of this function
         return data.as_string()  # type: ignore[attr-defined]
-
-    raise TypeError(f"Expecting Mapping or TOML Container, {type(data)} given")
+    except Exception as ex:
+        msg = f"Expecting Mapping or TOML Container, {type(data)} given"
+        raise TypeError(msg) from ex
 
 
 def load(fp: IO) -> TOMLDocument:
