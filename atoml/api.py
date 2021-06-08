@@ -42,7 +42,7 @@ def dumps(data: Mapping, sort_keys: bool = False) -> str:
         # data should be a `Container` (and therefore implement `as_string`)
         # for all type safe invocations of this function
         return data.as_string()  # type: ignore[attr-defined]
-    except Exception as ex:
+    except AttributeError as ex:
         msg = f"Expecting Mapping or TOML Container, {type(data)} given"
         raise TypeError(msg) from ex
 
