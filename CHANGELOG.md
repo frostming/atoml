@@ -1,5 +1,9 @@
 # Change Log
 
+## v1.0.3(2021/7/17)
+
+- **Bugfix**: Fix multiline array format issue when an element is removed. [#19](https://github.com/frostming/atoml/issues/19)
+
 ## v1.0.2(2021/6/1)
 
 - **Bugfix**: Fix multiline array format issue when a new value is appended. [#12](https://github.com/frostming/atoml/issues/12)

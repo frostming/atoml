@@ -907,6 +907,8 @@ class Array(Item, MutableSequence, list):
             for i in range(real_idx + 1, len(self._value)):
                 if isinstance(self._value[i], Whitespace):
                     yield i
+                else:
+                    break
 
         indexes = set()
         if isinstance(key, slice):
