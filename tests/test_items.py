@@ -126,6 +126,9 @@ def test_key_automatically_sets_proper_string_type_if_not_bare():
 
     assert key.t == KeyType.Basic
 
+    key = Key("")
+    assert key.t == KeyType.Basic
+
 
 def test_array_behaves_like_a_list():
     a = item([1, 2])

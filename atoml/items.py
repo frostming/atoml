@@ -212,8 +212,8 @@ class Key:
         original: Optional[str] = None,
     ) -> None:
         if t is None:
-            if any(
-                [c not in string.ascii_letters + string.digits + "-" + "_" for c in k]
+            if not k or any(
+                c not in string.ascii_letters + string.digits + "-" + "_" for c in k
             ):
                 t = KeyType.Basic
             else:

@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Bugfixes
+
+- Fix a bug that empty keys aren't quoted correctly. [#23](https://github.com/frostming/atoml/issues/23)
+
 ## v1.0.3(2021/7/17)
 
 - **Bugfix**: Fix multiline array format issue when an element is removed. [#19](https://github.com/frostming/atoml/issues/19)
