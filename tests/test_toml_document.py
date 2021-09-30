@@ -697,3 +697,22 @@ a = 1
 b = 1
 """
     )
+
+
+def test_replace_with_table():
+    content = """a = 1
+b = 2
+c = 3
+"""
+    doc = parse(content)
+    doc["b"] = {"foo": "bar"}
+    assert (
+        doc.as_string()
+        == """a = 1
+c = 3
+
+[b]
+foo = "bar"
+
+"""
+    )

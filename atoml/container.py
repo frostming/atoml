@@ -567,21 +567,30 @@ class Container(MutableMapping, dict):
 
         value = _item(value)
 
-        # Copying trivia
-        if not isinstance(value, (Whitespace, AoT)):
-            value.trivia.indent = v.trivia.indent
-            value.trivia.comment_ws = v.trivia.comment_ws
-            value.trivia.comment = v.trivia.comment
-            value.trivia.trail = v.trivia.trail
-
         if isinstance(value, Table):
             value.display_name = None
             # Insert a cosmetic new line for tables
             value.append(None, Whitespace("\n"))
 
-        self._body[idx] = (new_key, value)
+        if isinstance(value, (AoT, Table)) and not isinstance(v, (AoT, Table)):
+            # new tables should appear after all non-table values
+            self.remove(k)
+            for i in range(idx, len(self._body)):
+                if isinstance(self._body[i][1], (AoT, Table)):
+                    self._insert_at(i, new_key, value)
+                    break
+            else:
+                self.append(new_key, value)
+        else:
+            # Copying trivia
+            if not isinstance(value, (Whitespace, AoT)):
+                value.trivia.indent = v.trivia.indent
+                value.trivia.comment_ws = v.trivia.comment_ws
+                value.trivia.comment = v.trivia.comment
+                value.trivia.trail = v.trivia.trail
+            self._body[idx] = (new_key, value)
 
-        dict.__setitem__(self, new_key.key, value.value)
+            dict.__setitem__(self, new_key.key, value.value)
 
     def __str__(self) -> str:
         return str(self.value)
@@ -633,7 +642,7 @@ class Container(MutableMapping, dict):
 
 
 class OutOfOrderTableProxy(MutableMapping, dict):
-    def __init__(self, container: Container, indices: tuple) -> None:
+    def __init__(self, container: Container, indices: Tuple[int]) -> None:
         self._container = container
         self._internal_container = Container(True)
         self._tables = []

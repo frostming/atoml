@@ -5,7 +5,8 @@
 ### Bugfixes
 
 - Fix a bug that empty keys aren't quoted correctly. [#23](https://github.com/frostming/atoml/issues/23)
-- Fix the table name when it has been moved. [#23](https://github.com/frostming/atoml/issues/24)
+- Fix the table name when it has been moved. [#24](https://github.com/frostming/atoml/issues/24)
+- Fix a bug that replacing existing item with a table should make sure it appear after all plain values. [#25](https://github.com/frostming/atoml/issues/25)
 
 ## v1.0.3(2021/7/17)
 
