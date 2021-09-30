@@ -675,3 +675,25 @@ option = "test"
     copied = copy.deepcopy(doc)
     assert copied == doc
     assert copied.as_string() == content
+
+
+def test_move_table():
+    content = """a = 1
+[x]
+a = 1
+[y]
+b = 1
+"""
+    doc = parse(content)
+    doc["a"] = doc.pop("x")
+    doc["z"] = doc.pop("y")
+    assert (
+        doc.as_string()
+        == """[a]
+a = 1
+
+
+[z]
+b = 1
+"""
+    )

@@ -199,6 +199,7 @@ class Parser:
     def _split_table_name(self, name: str) -> Iterator[Key]:
         in_name = False
         current = ""
+        original = ""
         t = KeyType.Bare
         parts = 0
         for c in name:
@@ -207,33 +208,24 @@ class Parser:
             if c == ".":
                 if in_name:
                     current += c
+                    original += c
                     continue
 
                 if not current:
                     raise self.parse_error()
 
-                yield Key(current.strip(), t=t, sep="", original=current)
+                yield Key(current.strip(), t=t, sep="", original=original)
 
                 parts += 1
 
-                current = ""
+                current = original = ""
                 t = KeyType.Bare
-                continue
             elif c in {"'", '"'}:
                 if in_name:
-                    if (
-                        t == KeyType.Literal
-                        and c == '"'
-                        or t == KeyType.Basic
-                        and c == "'"
-                    ):
+                    if c == t.value:
+                        in_name = False
+                    else:
                         current += c
-                        continue
-
-                    if c != t.value:
-                        raise self.parse_error()
-
-                    in_name = False
                 else:
                     if (
                         current.strip()
@@ -244,22 +236,22 @@ class Parser:
 
                     in_name = True
                     t = KeyType.Literal if c == "'" else KeyType.Basic
-
-                continue
+                original += c
             elif in_name or c.is_bare_key_char():
                 current += c
+                original += c
             elif c.is_spaces():
                 # A space is only valid at this point
                 # if it's in between parts.
                 # We store it for now and will check
                 # later if it's valid
                 current += c
-                continue
+                original += c
             else:
                 raise self.parse_error()
 
         if current.strip():
-            yield Key(current.strip(), t=t, sep="", original=current)
+            yield Key(current.strip(), t=t, sep="", original=original)
 
     def _parse_item(self) -> Optional[Tuple[Optional[Key], Item]]:
         """
@@ -1094,7 +1086,7 @@ class Parser:
             values,
             Trivia(indent, cws, comment, trail),
             is_aot,
-            name=name,
+            name=name_parts[0].key if name_parts else key.key,
             display_name=name,
         )
 
@@ -1123,13 +1115,13 @@ class Parser:
                         child = Table(
                             Container(True),
                             Trivia(indent, cws, comment, trail),
-                            is_aot and i == len(name_parts[1:]) - 1,
-                            is_super_table=i < len(name_parts[1:]) - 1,
+                            is_aot and i == len(name_parts) - 2,
+                            is_super_table=i < len(name_parts) - 2,
                             name=_name.key,
-                            display_name=name if i == len(name_parts[1:]) - 1 else None,
+                            display_name=name if i == len(name_parts) - 2 else None,
                         )
 
-                    if is_aot and i == len(name_parts[1:]) - 1:
+                    if is_aot and i == len(name_parts) - 2:
                         table.raw_append(
                             _name, AoT([child], name=table.name, parsed=True)
                         )

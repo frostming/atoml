@@ -18,7 +18,7 @@ from typing import (
 )
 
 from ._compat import PY38, decode
-from ._utils import escape_string
+from ._utils import escape_string, escape_quotes
 
 
 if TYPE_CHECKING:
@@ -226,7 +226,7 @@ class Key:
         self.sep = sep
         self.key = k
         if original is None:
-            original = k
+            original = t.value + escape_quotes(k, t.value) + t.value
 
         self._original = original
 
@@ -243,7 +243,7 @@ class Key:
         return self.t == KeyType.Bare
 
     def as_string(self) -> str:
-        return f"{self.delimiter}{self._original}{self.delimiter}"
+        return self._original
 
     def __hash__(self) -> int:
         return hash(self.key)

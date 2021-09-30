@@ -84,13 +84,11 @@ class Container(MutableMapping, dict):
         if isinstance(item, (AoT, Table)) and item.name is None:
             item.name = key.key
 
-        if (
-            isinstance(item, Table)
-            and self._body
-            and not self._parsed
-            and not item.trivia.indent
-        ):
-            item.trivia.indent = "\n"
+        if isinstance(item, Table):
+            if item.name != key.key:
+                item.display_name = None
+            if self._body and not self._parsed and not item.trivia.indent:
+                item.trivia.indent = "\n"
 
         if isinstance(item, AoT) and self._body and not self._parsed:
             if item and "\n" not in item[0].trivia.indent:
@@ -374,8 +372,8 @@ class Container(MutableMapping, dict):
         return s
 
     def _render_table(
-        self, key, table, prefix=None
-    ):  # (Key, Table, Optional[str]) -> str
+        self, key: Key, table: Table, prefix: Optional[str] = None
+    ) -> str:
         cur = ""
 
         if table.display_name is not None:
@@ -438,7 +436,7 @@ class Container(MutableMapping, dict):
 
         return cur
 
-    def _render_aot_table(self, table, prefix=None):  # (Table, Optional[str]) -> str
+    def _render_aot_table(self, table: Table, prefix: Optional[str] = None) -> str:
         cur = ""
 
         _key = prefix or ""
@@ -577,6 +575,7 @@ class Container(MutableMapping, dict):
             value.trivia.trail = v.trivia.trail
 
         if isinstance(value, Table):
+            value.display_name = None
             # Insert a cosmetic new line for tables
             value.append(None, Whitespace("\n"))
 
