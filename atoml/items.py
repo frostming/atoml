@@ -18,7 +18,7 @@ from typing import (
 )
 
 from ._compat import PY38, decode
-from ._utils import escape_string, escape_quotes
+from ._utils import escape_quotes, escape_string
 
 
 if TYPE_CHECKING:
