@@ -883,10 +883,10 @@ class Array(Item, MutableSequence, list):
         elif self._value and idx >= len(self._value):
             # Append to the last
             i = len(self._value) - 1
-            while i and isinstance(self._value[i], (Comment, Whitespace)):
-                if (
-                    isinstance(self._value[i], Whitespace)
-                    and self._value[i].s.strip() == ","
+            while i >= 0 and isinstance(self._value[i], (Comment, Whitespace)):
+                v = self._value[i]
+                if isinstance(v, Whitespace) and (
+                    (i == 0 and v.s.strip() == "") or v.s.strip() == ","
                 ):
                     break
                 i -= 1

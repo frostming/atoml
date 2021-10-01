@@ -214,6 +214,22 @@ a = [
     assert expected == doc.as_string()
 
 
+def test_array_with_only_whitespace_append():
+    doc = parse("a = [  ]")
+    doc["a"].append("def")
+    expected = 'a = [  "def"]'  # Previously `a = [  , "def"]` due to a bug
+    out = doc.as_string()
+    assert expected == out
+    assert parse(out)["a"][0] == "def"
+
+    doc = parse("a = [\n]")
+    doc["a"].append("def")
+    expected = 'a = [\n"def"]'  # Previously `a=[\n,"def"]` due to a bug
+    out = doc.as_string()
+    assert expected == out
+    assert parse(out)["a"][0] == "def"
+
+
 def test_dicts_are_converted_to_tables():
     t = item({"foo": {"bar": "baz"}})
 
