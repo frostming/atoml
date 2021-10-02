@@ -12,6 +12,7 @@ def test_build_example(example):
     doc.add(nl())
     doc.add("title", "TOML Example")
 
+    doc.add(nl())
     owner = table()
     owner.add("name", "Tom Preston-Werner")
     owner.add("organization", "GitHub")
@@ -21,6 +22,7 @@ def test_build_example(example):
 
     doc.add("owner", owner)
 
+    doc.add(nl())
     database = table()
     database["server"] = "192.168.1.1"
     database["ports"] = [8001, 8001, 8002]
@@ -29,12 +31,12 @@ def test_build_example(example):
 
     doc["database"] = database
 
+    doc.add(nl())
     servers = table()
     servers.add(nl())
     c = comment(
         "You can indent as you please. Tabs or spaces. TOML don't care."
     ).indent(2)
-    c.trivia.trail = ""
     servers.add(c)
     alpha = table()
     servers.append("alpha", alpha)
@@ -42,6 +44,7 @@ def test_build_example(example):
     alpha.add("ip", "10.0.0.1")
     alpha.add("dc", "eqdc10")
 
+    servers.add(nl())
     beta = table()
     servers.append("beta", beta)
     beta.add("ip", "10.0.0.2")
@@ -52,6 +55,7 @@ def test_build_example(example):
 
     doc["servers"] = servers
 
+    doc.add(nl())
     clients = table()
     doc.add("clients", clients)
     clients["data"] = item([["gamma", "delta"], [1, 2]]).comment(
@@ -83,6 +87,7 @@ def test_build_example(example):
     nail["color"] = "gray"
 
     products.append(hammer)
+    hammer.add(nl())
     products.append(nail)
 
     assert content == doc.as_string()
@@ -129,7 +134,6 @@ def test_top_level_keys_are_put_at_the_root_of_the_document():
     expected = """\
 # Comment
 bar = 1
-
 [foo]
 name = "test"
 """

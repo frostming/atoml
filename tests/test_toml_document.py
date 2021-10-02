@@ -277,7 +277,6 @@ name = "Test 1"
         doc.as_string()
         == """[foo]
 a = "b"
-
 [bar]
 name = "Baz"
 
@@ -691,8 +690,6 @@ b = 1
         doc.as_string()
         == """[a]
 a = 1
-
-
 [z]
 b = 1
 """
@@ -710,9 +707,7 @@ c = 3
         doc.as_string()
         == """a = 1
 c = 3
-
 [b]
 foo = "bar"
-
 """
     )

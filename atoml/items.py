@@ -1364,13 +1364,6 @@ class AoT(Item, MutableSequence, list):
                 value.trivia.indent = indent
             else:
                 value.trivia.indent = m.group(1) + indent + m.group(2)
-        prev_table = self._body[index - 1] if 0 < index and length else None
-        next_table = self._body[index + 1] if index < length - 1 else None
-        if not self._parsed:
-            if prev_table and "\n" not in value.trivia.indent:
-                value.trivia.indent = "\n" + value.trivia.indent
-            if next_table and "\n" not in next_table.trivia.indent:
-                next_table.trivia.indent = "\n" + next_table.trivia.indent
         self._body.insert(index, value)
         list.insert(self, index, value)
 
@@ -1394,7 +1387,7 @@ class Null(Item):
     """
 
     def __init__(self) -> None:
-        pass
+        self._trivia = Trivia()  # Required to not break Liskov Substitution Principle
 
     @property
     def discriminant(self) -> int:

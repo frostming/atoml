@@ -87,12 +87,6 @@ class Container(MutableMapping, dict):
         if isinstance(item, Table):
             if item.name != key.key:
                 item.display_name = None
-            if self._body and not self._parsed and not item.trivia.indent:
-                item.trivia.indent = "\n"
-
-        if isinstance(item, AoT) and self._body and not self._parsed:
-            if item and "\n" not in item[0].trivia.indent:
-                item[0].trivia.indent = "\n" + item[0].trivia.indent
 
         if key is not None and key in self:
             current_idx = self._map[key]
@@ -196,7 +190,6 @@ class Container(MutableMapping, dict):
                         previous_item = self._body[-1][1]
                         if (
                             not isinstance(previous_item, Whitespace)
-                            and not is_table
                             and "\n" not in previous_item.trivia.trail
                         ):
                             previous_item.trivia.trail += "\n"
@@ -309,7 +302,6 @@ class Container(MutableMapping, dict):
             previous_item = self._body[idx - 1][1]
             if (
                 not isinstance(previous_item, Whitespace)
-                and not isinstance(item, (AoT, Table))
                 and "\n" not in previous_item.trivia.trail
             ):
                 previous_item.trivia.trail += "\n"
@@ -569,8 +561,6 @@ class Container(MutableMapping, dict):
 
         if isinstance(value, Table):
             value.display_name = None
-            # Insert a cosmetic new line for tables
-            value.append(None, Whitespace("\n"))
 
         if isinstance(value, (AoT, Table)) and not isinstance(v, (AoT, Table)):
             # new tables should appear after all non-table values

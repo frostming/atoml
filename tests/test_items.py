@@ -241,7 +241,6 @@ def test_dicts_are_converted_to_tables_and_keep_order():
         == """[foo]
 bar = "baz"
 abc = 123
-
 [[foo.baz]]
 c = 3
 b = 2
@@ -267,7 +266,6 @@ def test_dicts_are_converted_to_tables_and_are_sorted_if_requested():
         == """[foo]
 abc = 123
 bar = "baz"
-
 [[foo.baz]]
 a = 1
 b = 2
@@ -286,7 +284,6 @@ def test_dicts_with_sub_dicts_are_properly_converted():
         == """[foo]
 float = 3.14
 int = 34
-
 [foo.bar]
 string = "baz"
 """
