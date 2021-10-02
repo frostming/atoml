@@ -180,9 +180,11 @@ class Container(MutableMapping, dict):
             for k, v in self._body:
                 if isinstance(v, Null):
                     # This happens only after deletion
+                    idx += 1
                     continue
 
                 if isinstance(v, Whitespace) and not v.is_fixed():
+                    idx += 1
                     continue
 
                 if not is_table and isinstance(v, (Table, AoT)):
