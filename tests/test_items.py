@@ -224,7 +224,14 @@ def test_array_with_only_whitespace_append():
 
     doc = parse("a = [\n]")
     doc["a"].append("def")
-    expected = 'a = [\n"def"]'  # Previously `a=[\n,"def"]` due to a bug
+    expected = 'a = [\n"def"]'  # Previously `a = [\n,"def"]` due to a bug
+    out = doc.as_string()
+    assert expected == out
+    assert parse(out)["a"][0] == "def"
+
+    doc = parse("a = [ # comment\n]")
+    doc["a"].append("def")
+    expected = 'a = [ # comment\n"def"]'  # Previously `a=[ # comment\n,"def"]`
     out = doc.as_string()
     assert expected == out
     assert parse(out)["a"][0] == "def"

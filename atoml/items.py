@@ -885,9 +885,9 @@ class Array(Item, MutableSequence, list):
             i = len(self._value) - 1
             while i >= 0 and isinstance(self._value[i], (Comment, Whitespace)):
                 v = self._value[i]
-                if isinstance(v, Whitespace) and (
-                    (i == 0 and v.s.strip() == "") or v.s.strip() == ","
-                ):
+                is_virtually_empty = i == 0
+                already_has_comma = isinstance(v, Whitespace) and v.s.strip() == ","
+                if is_virtually_empty or already_has_comma:
                     break
                 i -= 1
             else:
