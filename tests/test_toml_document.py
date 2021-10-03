@@ -3,6 +3,7 @@ import json
 import pickle
 
 from datetime import datetime
+from textwrap import dedent
 
 import pytest
 
@@ -681,6 +682,7 @@ def test_move_table():
     content = """a = 1
 [x]
 a = 1
+
 [y]
 b = 1
 """
@@ -691,7 +693,6 @@ b = 1
         doc.as_string()
         == """[a]
 a = 1
-
 
 [z]
 b = 1
@@ -713,7 +714,6 @@ c = 3
 
 [b]
 foo = "bar"
-
 """
     )
 
@@ -746,3 +746,47 @@ def test_replace_with_comment():
     doc["a"] = a
     expected = "a = {a = 1, b = 2, c = 3} # `a` should be an inline-table"
     assert doc.as_string() == expected
+
+
+def test_no_spurious_whitespaces():
+    content = """\
+    [x]
+    a = 1
+
+    [y]
+    b = 2
+    """
+    doc = parse(dedent(content))
+    doc["z"] = doc.pop("y")
+    expected = """\
+    [x]
+    a = 1
+
+    [z]
+    b = 2
+    """
+    assert doc.as_string() == dedent(expected)
+    doc["w"] = {"c": 3}
+    expected = """\
+    [x]
+    a = 1
+
+    [z]
+    b = 2
+
+    [w]
+    c = 3
+    """
+    assert doc.as_string() == dedent(expected)
+
+    doc = parse(dedent(content))
+    del doc["x"]
+    doc["z"] = {"c": 3}
+    expected = """\
+    [y]
+    b = 2
+
+    [z]
+    c = 3
+    """
+    assert doc.as_string() == dedent(expected)
