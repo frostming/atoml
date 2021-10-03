@@ -585,8 +585,8 @@ class Container(MutableMapping, dict):
             # Copying trivia
             if not isinstance(value, (Whitespace, AoT)):
                 value.trivia.indent = v.trivia.indent
-                value.trivia.comment_ws = v.trivia.comment_ws
-                value.trivia.comment = v.trivia.comment
+                value.trivia.comment_ws = value.trivia.comment_ws or v.trivia.comment_ws
+                value.trivia.comment = value.trivia.comment or v.trivia.comment
                 value.trivia.trail = v.trivia.trail
             self._body[idx] = (new_key, value)
 
