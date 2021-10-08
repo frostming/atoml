@@ -716,3 +716,33 @@ foo = "bar"
 
 """
     )
+
+
+def test_replace_with_comment():
+    content = 'a = "1"'
+    doc = parse(content)
+    a = atoml.item(int(doc["a"]))
+    a.comment("`a` should be an int")
+    doc["a"] = a
+    expected = "a = 1 # `a` should be an int"
+    assert doc.as_string() == expected
+
+    content = 'a = "1, 2, 3"'
+    doc = parse(content)
+    a = atoml.array()
+    a.comment("`a` should be an array")
+    for x in doc["a"].split(","):
+        a.append(int(x.strip()))
+    doc["a"] = a
+    expected = "a = [1, 2, 3] # `a` should be an array"
+    assert doc.as_string() == expected
+
+    doc = parse(content)
+    a = atoml.inline_table()
+    a.comment("`a` should be an inline-table")
+    for x in doc["a"].split(","):
+        i = int(x.strip())
+        a.append(chr(ord("a") + i - 1), i)
+    doc["a"] = a
+    expected = "a = {a = 1, b = 2, c = 3} # `a` should be an inline-table"
+    assert doc.as_string() == expected
