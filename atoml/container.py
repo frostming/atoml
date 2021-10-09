@@ -84,14 +84,16 @@ class Container(MutableMapping, dict):
         if isinstance(item, (AoT, Table)) and item.name is None:
             item.name = key.key
 
+        prev = self._previous_item()
+        prev_ws = isinstance(prev, Whitespace) or ends_with_withespace(prev)
         if isinstance(item, Table):
             if item.name != key.key:
                 item.display_name = None
-            if self._body and not self._parsed and not item.trivia.indent:
+            if self._body and not (self._parsed or item.trivia.indent or prev_ws):
                 item.trivia.indent = "\n"
 
         if isinstance(item, AoT) and self._body and not self._parsed:
-            if item and "\n" not in item[0].trivia.indent:
+            if item and not ("\n" in item[0].trivia.indent or prev_ws):
                 item[0].trivia.indent = "\n" + item[0].trivia.indent
 
         if key is not None and key in self:
@@ -194,10 +196,11 @@ class Container(MutableMapping, dict):
                         return self._insert_at(key_after + 1, key, item)
                     else:
                         previous_item = self._body[-1][1]
-                        if (
-                            not isinstance(previous_item, Whitespace)
-                            and not is_table
-                            and "\n" not in previous_item.trivia.trail
+                        if not (
+                            isinstance(previous_item, Whitespace)
+                            or ends_with_withespace(previous_item)
+                            or is_table
+                            or "\n" in previous_item.trivia.trail
                         ):
                             previous_item.trivia.trail += "\n"
                 else:
@@ -307,10 +310,11 @@ class Container(MutableMapping, dict):
 
         if idx > 0:
             previous_item = self._body[idx - 1][1]
-            if (
-                not isinstance(previous_item, Whitespace)
-                and not isinstance(item, (AoT, Table))
-                and "\n" not in previous_item.trivia.trail
+            if not (
+                isinstance(previous_item, Whitespace)
+                or ends_with_withespace(previous_item)
+                or isinstance(item, (AoT, Table))
+                or "\n" in previous_item.trivia.trail
             ):
                 previous_item.trivia.trail += "\n"
 
@@ -567,19 +571,16 @@ class Container(MutableMapping, dict):
 
         value = _item(value)
 
-        if isinstance(value, Table):
-            value.display_name = None
-            # Insert a cosmetic new line for tables
-            value.append(None, Whitespace("\n"))
-
         if isinstance(value, (AoT, Table)) and not isinstance(v, (AoT, Table)):
             # new tables should appear after all non-table values
             self.remove(k)
             for i in range(idx, len(self._body)):
                 if isinstance(self._body[i][1], (AoT, Table)):
                     self._insert_at(i, new_key, value)
+                    idx = i
                     break
             else:
+                idx = -1
                 self.append(new_key, value)
         else:
             # Copying trivia
@@ -589,6 +590,18 @@ class Container(MutableMapping, dict):
                 value.trivia.comment = value.trivia.comment or v.trivia.comment
                 value.trivia.trail = v.trivia.trail
             self._body[idx] = (new_key, value)
+
+        if isinstance(value, Table):
+            value.display_name = None
+            # Insert a cosmetic new line for tables if:
+            # - it does not have it yet OR is not followed by one
+            # - it is not the last item
+            last, _ = self._previous_item_with_index()
+            idx = last if idx < 0 else idx
+            has_ws = ends_with_withespace(value)
+            next_ws = idx < last and isinstance(self._body[idx + 1][1], Whitespace)
+            if idx < last and not (next_ws or has_ws):
+                value.append(None, Whitespace("\n"))
 
             dict.__setitem__(self, new_key.key, value.value)
 
@@ -639,6 +652,27 @@ class Container(MutableMapping, dict):
         c._map.update(self._map)
 
         return c
+
+    def _previous_item_with_index(
+        self, idx: Optional[int] = None, ignore=(Null,)
+    ) -> Optional[Tuple[int, Item]]:
+        """Find the immediate previous item before index ``idx``"""
+        if idx is None or idx > len(self._body):
+            idx = len(self._body)
+        for i in range(idx - 1, -1, -1):
+            v = self._body[i][-1]
+            if not isinstance(v, ignore):
+                return i, v
+        return None
+
+    def _previous_item(
+        self, idx: Optional[int] = None, ignore=(Null,)
+    ) -> Optional[Item]:
+        """Find the immediate previous item before index ``idx``.
+        If ``idx`` is not given, the last item is returned.
+        """
+        prev = self._previous_item_with_index(idx, ignore)
+        return prev[-1] if prev else None
 
 
 class OutOfOrderTableProxy(MutableMapping, dict):
@@ -720,3 +754,12 @@ class OutOfOrderTableProxy(MutableMapping, dict):
     def setdefault(self, key: Union[Key, str], default: Any) -> Any:
         super().setdefault(key, default=default)
         return self[key]
+
+
+def ends_with_withespace(it: Any) -> bool:
+    """Returns ``True`` if the given item ``it`` is a ``Table`` ot ``AoT`` object
+    ending with a ``Whitespace``.
+    """
+    return (
+        isinstance(it, Table) and isinstance(it.value._previous_item(), Whitespace)
+    ) or (isinstance(it, AoT) and len(it) > 0 and isinstance(it[-1], Whitespace))
