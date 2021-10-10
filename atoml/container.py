@@ -757,7 +757,7 @@ class OutOfOrderTableProxy(MutableMapping, dict):
 
 
 def ends_with_withespace(it: Any) -> bool:
-    """Returns ``True`` if the given item ``it`` is a ``Table`` ot ``AoT`` object
+    """Returns ``True`` if the given item ``it`` is a ``Table`` or ``AoT`` object
     ending with a ``Whitespace``.
     """
     return (
