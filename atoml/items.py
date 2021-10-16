@@ -1057,6 +1057,13 @@ class Table(Item, MutableMapping, dict):
 
         return self
 
+    def invalidate_display_name(self):
+        self.display_name = None
+
+        for child in self.values():
+            if isinstance(child, Table):
+                child.invalidate_display_name()
+
     def __iter__(self) -> Iterator[str]:
         return iter(self._value)
 

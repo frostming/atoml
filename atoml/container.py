@@ -88,7 +88,7 @@ class Container(MutableMapping, dict):
         prev_ws = isinstance(prev, Whitespace) or ends_with_withespace(prev)
         if isinstance(item, Table):
             if item.name != key.key:
-                item.display_name = None
+                item.invalidate_display_name()
             if self._body and not (self._parsed or item.trivia.indent or prev_ws):
                 item.trivia.indent = "\n"
 
@@ -592,7 +592,7 @@ class Container(MutableMapping, dict):
             self._body[idx] = (new_key, value)
 
         if isinstance(value, Table):
-            value.display_name = None
+            value.invalidate_display_name()
             # Insert a cosmetic new line for tables if:
             # - it does not have it yet OR is not followed by one
             # - it is not the last item
