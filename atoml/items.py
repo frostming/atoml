@@ -38,7 +38,8 @@ def item(value, _parent=None, _sort_keys=False):
     elif isinstance(value, float):
         return Float(value, Trivia(), str(value))
     elif isinstance(value, dict):
-        val = Table(Container(), Trivia(), False)
+        table_constructor = InlineTable if isinstance(_parent, Array) else Table
+        val = table_constructor(Container(), Trivia(), False)
         for k, v in sorted(
             value.items(),
             key=lambda i: (isinstance(i[1], dict), i[0] if _sort_keys else 1),
@@ -854,7 +855,7 @@ class Array(Item, MutableSequence, list):
         return list.__getitem__(self, key)
 
     def __setitem__(self, key: Union[int, slice], value: Any) -> Any:
-        it = item(value)
+        it = item(value, _parent=self)
         list.__setitem__(self, key, it.value)
         if isinstance(key, slice):
             raise ValueError("slice assignment is not supported")
@@ -863,7 +864,7 @@ class Array(Item, MutableSequence, list):
         self._value[self._index_map[key]] = it
 
     def insert(self, pos: int, value: Any) -> None:
-        it = item(value)
+        it = item(value, _parent=self)
         length = len(self)
         if not isinstance(it, (Comment, Whitespace)):
             list.insert(self, pos, it.value)
