@@ -47,14 +47,16 @@ def item(value, _parent=None, _sort_keys=False):
 
         return val
     elif isinstance(value, list):
-        if value and isinstance(value[0], dict):
+        if value and all(isinstance(v, dict) for v in value):
             a = AoT([])
+            table_constructor = Table
         else:
             a = Array([], Trivia())
+            table_constructor = InlineTable
 
         for v in value:
             if isinstance(v, dict):
-                table = Table(Container(), Trivia(), True)
+                table = table_constructor(Container(), Trivia(), True)
 
                 for k, _v in sorted(
                     v.items(),
