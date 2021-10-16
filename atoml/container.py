@@ -93,6 +93,7 @@ class Container(MutableMapping, dict):
                 item.trivia.indent = "\n"
 
         if isinstance(item, AoT) and self._body and not self._parsed:
+            item.invalidate_display_name()
             if item and not ("\n" in item[0].trivia.indent or prev_ws):
                 item[0].trivia.indent = "\n" + item[0].trivia.indent
 
@@ -591,8 +592,10 @@ class Container(MutableMapping, dict):
                 value.trivia.trail = v.trivia.trail
             self._body[idx] = (new_key, value)
 
+        if hasattr(value, "invalidate_display_name"):
+            value.invalidate_display_name()  # type: ignore[attr-defined]
+
         if isinstance(value, Table):
-            value.invalidate_display_name()
             # Insert a cosmetic new line for tables if:
             # - it does not have it yet OR is not followed by one
             # - it is not the last item
