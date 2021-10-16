@@ -1057,6 +1057,13 @@ class Table(Item, MutableMapping, dict):
 
         return self
 
+    def invalidate_display_name(self):
+        self.display_name = None
+
+        for child in self.values():
+            if hasattr(child, "invalidate_display_name"):
+                child.invalidate_display_name()
+
     def __iter__(self) -> Iterator[str]:
         return iter(self._value)
 
@@ -1373,6 +1380,12 @@ class AoT(Item, MutableSequence, list):
                 next_table.trivia.indent = "\n" + next_table.trivia.indent
         self._body.insert(index, value)
         list.insert(self, index, value)
+
+    def invalidate_display_name(self):
+        """Call ``invalidate_display_name`` on the contained tables"""
+        for child in self:
+            if hasattr(child, "invalidate_display_name"):
+                child.invalidate_display_name()
 
     def as_string(self) -> str:
         b = ""

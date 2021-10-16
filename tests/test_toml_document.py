@@ -718,6 +718,62 @@ foo = "bar"
     )
 
 
+def test_replace_with_table_of_nested():
+    example = """\
+    [a]
+    x = 1
+
+    [a.b]
+    y = 2
+    """
+    doc = parse(dedent(example))
+    doc["c"] = doc.pop("a")
+    expected = """\
+    [c]
+    x = 1
+
+    [c.b]
+    y = 2
+    """
+    assert doc.as_string().strip() == dedent(expected).strip()
+
+
+def test_replace_with_aot_of_nested():
+    example = """\
+    [a]
+    x = 1
+
+    [[a.b]]
+    y = 2
+
+    [[a.b]]
+
+    [a.b.c]
+    z = 2
+
+    [[a.b.c.d]]
+    w = 2
+    """
+    doc = parse(dedent(example))
+    doc["f"] = doc.pop("a")
+    expected = """\
+    [f]
+    x = 1
+
+    [[f.b]]
+    y = 2
+
+    [[f.b]]
+
+    [f.b.c]
+    z = 2
+
+    [[f.b.c.d]]
+    w = 2
+    """
+    assert doc.as_string().strip() == dedent(expected).strip()
+
+
 def test_replace_with_comment():
     content = 'a = "1"'
     doc = parse(content)
