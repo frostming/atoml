@@ -273,3 +273,11 @@ def test_item_dict_to_table():
 bar = "baz"
 """
     )
+
+
+def test_item_mixed_aray():
+    example = [{"a": 3}, "b", 42]
+    expected = '[{a = 3}, "b", 42]'
+    t = atoml.item(example)
+    assert t.as_string().strip() == expected
+    assert dumps({"x": {"y": example}}).strip() == "[x]\ny = " + expected
