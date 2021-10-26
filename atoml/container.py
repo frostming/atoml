@@ -176,11 +176,9 @@ class Container(MutableMapping, dict):
             # item that is not a table and insert after it
             # If no such item exists, insert at the top of the table
             key_after = None
-            idx = 0
-            for k, v in self._body:
+            for i, (k, v) in enumerate(self._body):
                 if isinstance(v, Null):
-                    # This happens only after deletion
-                    continue
+                    continue  # Null elements are inserted after deletion
 
                 if isinstance(v, Whitespace) and not v.is_fixed():
                     continue
@@ -188,8 +186,7 @@ class Container(MutableMapping, dict):
                 if not is_table and isinstance(v, (Table, AoT)):
                     break
 
-                key_after = k or idx
-                idx += 1
+                key_after = k or i  # last scalar, Array or InlineTable value
 
             if key_after is not None:
                 if isinstance(key_after, int):

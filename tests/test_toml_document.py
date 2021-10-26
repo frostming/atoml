@@ -9,7 +9,7 @@ import pytest
 
 import atoml
 
-from atoml import parse
+from atoml import parse, ws
 from atoml._utils import _utc
 from atoml.exceptions import NonExistentKey
 
@@ -846,3 +846,29 @@ def test_no_spurious_whitespaces():
     c = 3
     """
     assert doc.as_string() == dedent(expected)
+
+
+def test_pop_add_whitespace_and_insert_table_work_togheter():
+    content = """\
+    a = 1
+    b = 2
+    c = 3
+    d = 4
+    """
+    doc = parse(dedent(content))
+    doc.pop("a")
+    doc.pop("b")
+    doc.add(ws("\n"))
+    doc["e"] = {"foo": "bar"}
+    expected = """\
+    c = 3
+    d = 4
+
+    [e]
+    foo = "bar"
+    """
+    text = doc.as_string()
+    out = parse(text)
+    assert out["d"] == 4
+    assert "d" not in out["e"]
+    assert text == dedent(expected)
