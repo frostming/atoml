@@ -678,9 +678,9 @@ class Parser:
         while True:
             # consume whitespace
             mark = self._idx
-            self.consume(TOMLChar.SPACES)
-            newline = self.consume(TOMLChar.NL)
+            self.consume(TOMLChar.SPACES + TOMLChar.NL)
             indent = self._src[mark : self._idx]
+            newline = set(TOMLChar.NL) & set(indent)
             if newline:
                 elems.append(Whitespace(indent))
                 continue

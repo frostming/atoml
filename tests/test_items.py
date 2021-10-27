@@ -170,7 +170,7 @@ def test_array_behaves_like_a_list():
     assert doc["a"] == [1, 2, 3, 4]
     assert (
         doc.as_string()
-        == """a = [1, 2,3, 4] # Comment
+        == """a = [1, 2, 3, 4] # Comment
 """
     )
 
@@ -198,20 +198,49 @@ def test_array_multiline():
     assert "[]" == t.as_string()
 
 
-def test_array_multiline_append():
+def test_array_multiline_modify():
     doc = parse(
         """\
 a = [
-    "abc",
+    "abc"
 ]"""
     )
-    doc["a"].multiline(True).append("def")
+    doc["a"].append("def")
     expected = """\
 a = [
     "abc",
-    "def",
+    "def"
 ]"""
     assert expected == doc.as_string()
+    doc["a"].insert(1, "ghi")
+    expected = """\
+a = [
+    "abc",
+    "ghi",
+    "def"
+]"""
+    assert expected == doc.as_string()
+
+
+def test_append_to_empty_array():
+    doc = parse("x = [ ]")
+    doc["x"].append("a")
+    assert doc.as_string() == 'x = [ "a" ]'
+    doc = parse("x = [\n]")
+    doc["x"].append("a")
+    assert doc.as_string() == 'x = [\n    "a"\n]'
+    doc = parse("x = [ # comment\n]")
+    doc["x"].append("a")
+    assert doc.as_string() == 'x = [ # comment\n "a"]'
+
+
+def test_append_dict_to_array():
+    doc = parse("x = [ ]")
+    doc["x"].append({"name": "John Doe", "email": "john@doe.com"})
+    expected = 'x = [ {name = "John Doe",email = "john@doe.com"} ]'
+    assert doc.as_string() == expected
+    # Make sure the produced string is valid
+    assert parse(doc.as_string()) == doc
 
 
 def test_dicts_are_converted_to_tables():
