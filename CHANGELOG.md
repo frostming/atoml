@@ -9,6 +9,8 @@
 - Fix a bug that replacing existing item with a table should make sure it appear after all plain values. [#25](https://github.com/frostming/atoml/issues/25)
 - Fix a bug when dumping lists containing both dicts and other items [#35](https://github.com/frostming/atoml/issues/35)
 - Prevent sequence of actions (remove items, add whitespace, add table) to result in incorrect TOML. [#28](https://github.com/frostming/atoml/pull/28)
+- Prevent dicts appended to existing array to result in invalid syntax. [#26](https://github.com/frostming/atoml/issues/26)
+- Prevent invalid `","` to appear when inserting elements to empty array. [#27](https://github.com/frostming/atoml/pull/27)
 
 ## v1.0.3(2021/7/17)
 
