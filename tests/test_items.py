@@ -229,9 +229,29 @@ def test_append_to_empty_array():
     doc = parse("x = [\n]")
     doc["x"].append("a")
     assert doc.as_string() == 'x = [\n    "a"\n]'
+
+
+def test_modify_array_with_comment():
     doc = parse("x = [ # comment\n]")
     doc["x"].append("a")
-    assert doc.as_string() == 'x = [ # comment\n "a"]'
+    assert doc.as_string() == 'x = [ # comment\n    "a"\n]'
+    doc = parse(
+        """\
+x = [
+    "a",
+    # comment
+    "b"
+]"""
+    )
+    doc["x"].insert(1, "c")
+    expected = """\
+x = [
+    "a",
+    # comment
+    "c",
+    "b"
+]"""
+    assert doc.as_string() == expected
 
 
 def test_append_dict_to_array():

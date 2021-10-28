@@ -882,17 +882,16 @@ class Array(Item, MutableSequence, list):
                 idx = self._index_map[pos]
             except KeyError:
                 raise IndexError("list index out of range")
-            items.append(Whitespace(","))
+            if not isinstance(it, (Whitespace, Comment)):
+                items.append(Whitespace(","))
         else:
             idx = len(self._value)
         if idx > 0:
-            if (
-                isinstance(self._value[idx - 1], Whitespace)
-                and "," not in self._value[idx - 1].s
-            ):
+            last_item = self._value[idx - 1]
+            if isinstance(last_item, Whitespace) and "," not in last_item.s:
                 # the item has an indent, copy that
                 idx -= 1
-                ws = self._value[idx].s
+                ws = last_item.s
             else:
                 ws = ""
             has_newline = bool(set(ws) & set(TOMLChar.NL))
@@ -905,11 +904,11 @@ class Array(Item, MutableSequence, list):
             idx > 0
             and pos > 0
             and not (
-                isinstance(self._value[idx - 1], Whitespace)
+                isinstance(self._value[idx - 1], Comment)
+                or isinstance(self._value[idx - 1], Whitespace)
                 and "," in self._value[idx - 1].s
             )
-        ):
-            # append comma to the last item
+        ):  # add comma after the last item
             items.insert(0, Whitespace(","))
         self._value[idx:idx] = items
 

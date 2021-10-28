@@ -289,7 +289,7 @@ class Parser:
 
         return self._parse_key_value(True)
 
-    def _parse_comment_trail(self) -> Tuple[str, str, str]:
+    def _parse_comment_trail(self, parse_trail: bool = True) -> Tuple[str, str, str]:
         """
         Returns (comment_ws, comment, trail)
         If there is no comment, comment_ws and comment will
@@ -334,18 +334,19 @@ class Parser:
             if self.end():
                 break
 
-        while self._current.is_spaces() and self.inc():
-            pass
-
-        if self._current == "\r":
-            self.inc()
-
-        if self._current == "\n":
-            self.inc()
-
         trail = ""
-        if self._idx != self._marker or self._current.is_ws():
-            trail = self.extract()
+        if parse_trail:
+            while self._current.is_spaces() and self.inc():
+                pass
+
+            if self._current == "\r":
+                self.inc()
+
+            if self._current == "\n":
+                self.inc()
+
+            if self._idx != self._marker or self._current.is_ws():
+                trail = self.extract()
 
         return comment_ws, comment, trail
 
@@ -687,7 +688,7 @@ class Parser:
 
             # consume comment
             if self._current == "#":
-                cws, comment, trail = self._parse_comment_trail()
+                cws, comment, trail = self._parse_comment_trail(parse_trail=False)
                 elems.append(Comment(Trivia(indent, cws, comment, trail)))
                 continue
 
