@@ -17,9 +17,8 @@ from typing import (
     overload,
 )
 
-from atoml.toml_char import TOMLChar
-
 from ._compat import PY38, decode
+from .toml_char import TOMLChar
 from ._utils import escape_quotes, escape_string
 
 
