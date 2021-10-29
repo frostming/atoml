@@ -252,6 +252,21 @@ x = [
     "b"
 ]"""
     assert doc.as_string() == expected
+    doc = parse(
+        """\
+x = [
+    1  # comment
+]"""
+    )
+    doc["x"].append(2)
+    assert (
+        doc.as_string()
+        == """\
+x = [
+    1,  # comment
+    2
+]"""
+    )
 
 
 def test_append_dict_to_array():

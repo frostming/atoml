@@ -903,17 +903,15 @@ class Array(Item, MutableSequence, list):
                 # four spaces for multiline array and single space otherwise
                 ws += "    " if has_newline else " "
             items.insert(0, Whitespace(ws))
-        if (
-            idx > 0
-            and pos > 0
-            and not (
-                isinstance(self._value[idx - 1], Comment)
-                or isinstance(self._value[idx - 1], Whitespace)
-                and "," in self._value[idx - 1].s
-            )
-        ):  # add comma after the last item
-            items.insert(0, Whitespace(","))
         self._value[idx:idx] = items
+        i = idx - 1
+        if pos > 0:  # Check if the last item ends with a comma
+            while i >= 0 and isinstance(self._value[i], (Whitespace, Comment)):
+                if isinstance(self._value[i], Whitespace) and "," in self._value[i].s:
+                    break
+                i -= 1
+            else:
+                self._value.insert(i + 1, Whitespace(","))
 
         self._reindex()
 
