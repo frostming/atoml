@@ -891,6 +891,10 @@ class Array(Item, MutableSequence, list):
                 # the item has an indent, copy that
                 idx -= 1
                 ws = last_item.s
+                if isinstance(it, Whitespace) and "," not in it.s:
+                    # merge the whitespace
+                    self._value[idx] = Whitespace(ws + it.s)
+                    return
             else:
                 ws = ""
             has_newline = bool(set(ws) & set(TOMLChar.NL))
