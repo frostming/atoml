@@ -10,6 +10,7 @@ from atoml.api import array, ws
 from atoml.exceptions import NonExistentKey
 from atoml.items import (
     Bool,
+    Comment,
     InlineTable,
     Integer,
     Key,
@@ -306,6 +307,14 @@ def test_array_add_line():
     7, 8
 ]"""
     )
+
+
+def test_array_add_line_invalid_value():
+    t = array()
+    with pytest.raises(ValueError, match="is not allowed"):
+        t.add_line(ws(" "))
+    with pytest.raises(ValueError, match="is not allowed"):
+        t.add_line(Comment(Trivia("  ", comment="test")))
 
 
 def test_dicts_are_converted_to_tables_and_keep_order():
