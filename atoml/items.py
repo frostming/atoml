@@ -888,12 +888,9 @@ class Array(Item, MutableSequence, list):
                 if i != len(items) - 1:
                     append_item(Whitespace(" "))
         if comment:
+            indent = " " if items else ""
             append_item(
-                Comment(
-                    Trivia(
-                        indent=" " if items else "", comment=f"# {comment}", trail=""
-                    )
-                )
+                Comment(Trivia(indent=indent, comment=f"# {comment}", trail=""))
             )
         # Atomic manipulation
         self._value[:] = values
