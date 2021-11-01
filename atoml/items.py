@@ -843,6 +843,53 @@ class Array(Item, MutableSequence, list):
             self._index_map[index] = i
             index += 1
 
+    def add_line(
+        self,
+        *items: Any,
+        indent: str = "    ",
+        comment: Optional[str] = None,
+        add_comma: bool = True,
+        newline: bool = True,
+    ) -> None:
+        """Add multiple items in a line.
+        When add_comma is True, only accept actual values and
+        ", " will be added between values automatically.
+        """
+        values = self._value
+
+        def append_item(el: Item) -> None:
+            if not values:
+                return values.append(el)
+            last_el = values[-1]
+            if (
+                isinstance(el, Whitespace)
+                and "," not in el.s
+                and isinstance(last_el, Whitespace)
+                and "," not in last_el.s
+            ):
+                values[-1] = Whitespace(last_el.s + el.s)
+            else:
+                values.append(el)
+
+        if newline:
+            append_item(Whitespace("\n"))
+        if indent:
+            append_item(Whitespace(indent))
+        for i, el in enumerate(items):
+            el = item(el, _parent=self)
+            if isinstance(el, Comment) or add_comma and isinstance(el, Whitespace):
+                raise ValueError(f"item type {type(el)} is not allowed")
+            if not isinstance(el, Whitespace):
+                list.append(self, el.value)
+            append_item(el)
+            if add_comma:
+                append_item(Whitespace(","))
+                if i != len(items) - 1:
+                    append_item(Whitespace(" "))
+        if comment:
+            append_item(Comment(Trivia(indent="  ", comment=f"# {comment}", trail="")))
+        self._reindex()
+
     def clear(self) -> None:
         list.clear(self)
 

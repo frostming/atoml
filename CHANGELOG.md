@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Add a new method `add_line` to `Array` to control the format. [#39](https://github.com/frostming/atoml/issues/39)
+
 ### Bugfixes
 
 - Fix a bug that empty keys aren't quoted correctly. [#23](https://github.com/frostming/atoml/issues/23)
