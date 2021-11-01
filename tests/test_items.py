@@ -302,8 +302,8 @@ def test_array_add_line():
     assert (
         t.as_string()
         == """[
-    1, 2, 3,  # Line 1
-    4, 5, 6,  # Line 2
+    1, 2, 3, # Line 1
+    4, 5, 6, # Line 2
     7, 8
 ]"""
     )
