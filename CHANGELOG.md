@@ -15,6 +15,7 @@
 - Prevent sequence of actions (remove items, add whitespace, add table) to result in incorrect TOML. [#28](https://github.com/frostming/atoml/pull/28)
 - Prevent dicts appended to existing array to result in invalid syntax. [#26](https://github.com/frostming/atoml/issues/26)
 - Prevent invalid `","` to appear when inserting elements to empty array. [#27](https://github.com/frostming/atoml/pull/27)
+- Fix a bug that missing `=` between k-v pair doesn't raise an parsing error.
 
 ## v1.0.3(2021/7/17)
 

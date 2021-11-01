@@ -1,6 +1,10 @@
 import pytest
 
-from atoml.exceptions import EmptyTableNameError, InternalParserError
+from atoml.exceptions import (
+    EmptyTableNameError,
+    InternalParserError,
+    UnexpectedCharError,
+)
 from atoml.items import StringType
 from atoml.parser import Parser
 
@@ -28,3 +32,12 @@ def test_parser_should_raise_an_error_for_empty_tables():
 
     assert e.value.line == 3
     assert e.value.col == 1
+
+
+def test_parser_should_raise_an_error_if_equal_not_found():
+    content = """[foo]
+a {c = 1, d = 2}
+"""
+    parser = Parser(content)
+    with pytest.raises(UnexpectedCharError):
+        parser.parse()
