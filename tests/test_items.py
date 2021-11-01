@@ -6,9 +6,11 @@ from datetime import date, datetime, time, timedelta
 import pytest
 
 from atoml import inline_table, parse
+from atoml.api import array, ws
 from atoml.exceptions import NonExistentKey
 from atoml.items import (
     Bool,
+    Comment,
     InlineTable,
     Integer,
     Key,
@@ -287,6 +289,33 @@ def test_dicts_are_converted_to_tables():
 bar = "baz"
 """
     )
+
+
+def test_array_add_line():
+    t = array()
+    t.add_line(1, 2, 3, comment="Line 1")
+    t.add_line(4, 5, 6, comment="Line 2")
+    t.add_line(7, ws(","), ws(" "), 8, add_comma=False)
+    t.add_line(indent="")
+    assert len(t) == 8
+    assert list(t) == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert (
+        t.as_string()
+        == """[
+    1, 2, 3, # Line 1
+    4, 5, 6, # Line 2
+    7, 8
+]"""
+    )
+
+
+def test_array_add_line_invalid_value():
+    t = array()
+    with pytest.raises(ValueError, match="is not allowed"):
+        t.add_line(1, ws(" "))
+    with pytest.raises(ValueError, match="is not allowed"):
+        t.add_line(Comment(Trivia("  ", comment="test")))
+    assert len(t) == 0
 
 
 def test_dicts_are_converted_to_tables_and_keep_order():
