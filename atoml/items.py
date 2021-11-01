@@ -855,7 +855,8 @@ class Array(Item, MutableSequence, list):
         When add_comma is True, only accept actual values and
         ", " will be added between values automatically.
         """
-        values = self._value
+        values = self._value[:]
+        new_values = []
 
         def append_item(el: Item) -> None:
             if not values:
@@ -880,7 +881,7 @@ class Array(Item, MutableSequence, list):
             if isinstance(el, Comment) or add_comma and isinstance(el, Whitespace):
                 raise ValueError(f"item type {type(el)} is not allowed")
             if not isinstance(el, Whitespace):
-                list.append(self, el.value)
+                new_values.append(el.value)
             append_item(el)
             if add_comma:
                 append_item(Whitespace(","))
@@ -888,6 +889,9 @@ class Array(Item, MutableSequence, list):
                     append_item(Whitespace(" "))
         if comment:
             append_item(Comment(Trivia(indent="  ", comment=f"# {comment}", trail="")))
+        # Atomic manipulation
+        self._value[:] = values
+        list.extend(self, new_values)
         self._reindex()
 
     def clear(self) -> None:

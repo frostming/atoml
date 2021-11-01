@@ -312,9 +312,10 @@ def test_array_add_line():
 def test_array_add_line_invalid_value():
     t = array()
     with pytest.raises(ValueError, match="is not allowed"):
-        t.add_line(ws(" "))
+        t.add_line(1, ws(" "))
     with pytest.raises(ValueError, match="is not allowed"):
         t.add_line(Comment(Trivia("  ", comment="test")))
+    assert len(t) == 0
 
 
 def test_dicts_are_converted_to_tables_and_keep_order():
