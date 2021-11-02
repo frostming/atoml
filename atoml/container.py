@@ -1,19 +1,18 @@
 import copy
 
-from collections.abc import MutableMapping
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from ._compat import decode
 from ._utils import merge_dicts
 from .exceptions import ATOMLError, KeyAlreadyPresent, NonExistentKey
-from .items import AoT, Comment, Item, Key, Null, Table, Whitespace
+from .items import AoT, Comment, Item, Key, Null, Table, Whitespace, _CustomDict
 from .items import item as _item
 
 
 _NOT_SET = object()
 
 
-class Container(MutableMapping, dict):
+class Container(_CustomDict):
     """
     A container for items within a TOMLDocument.
     """
@@ -675,7 +674,7 @@ class Container(MutableMapping, dict):
         return prev[-1] if prev else None
 
 
-class OutOfOrderTableProxy(MutableMapping, dict):
+class OutOfOrderTableProxy(_CustomDict):
     def __init__(self, container: Container, indices: Tuple[int]) -> None:
         self._container = container
         self._internal_container = Container(True)
