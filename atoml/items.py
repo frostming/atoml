@@ -25,7 +25,7 @@ if TYPE_CHECKING:  # pragma: no cover
     # Define _CustomList and _CustomDict as a workaround for:
     # https://github.com/python/mypy/issues/11427
     #
-    # According to this issue, the typeshed contains a "white lie"
+    # According to this issue, the typeshed contains a "lie"
     # (it adds MutableSequence to the ancestry of list and MutableMapping to
     # the ancestry of dict) which completely messes with the type inference for
     # Table, InlineTable, Array and Container.
