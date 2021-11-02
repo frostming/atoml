@@ -1399,7 +1399,7 @@ class String(str, Item):
         return self._t, str(self), self._original, self._trivia
 
 
-class AoT(Item, MutableSequence, list):
+class AoT(Item, _CustomList):
     """
     An array of table literal
     """
