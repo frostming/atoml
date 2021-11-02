@@ -1,7 +1,6 @@
 import re
 import string
 
-from collections.abc import MutableMapping, MutableSequence
 from datetime import date, datetime, time, tzinfo
 from enum import Enum
 from functools import lru_cache
@@ -22,8 +21,31 @@ from ._utils import escape_quotes, escape_string
 from .toml_char import TOMLChar
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
+    # Define _CustomList and _CustomDict as a workaround for:
+    # https://github.com/python/mypy/issues/11427
+    #
+    # According to this issue, the typeshed contains a "white lie"
+    # (it adds MutableSequence to the ancestry of list and MutableMapping to
+    # the ancestry of dict) which completely messes with the type inference for
+    # Table, InlineTable, Array and Container.
+    #
+    # Importing from builtins is preferred over simple assignment, see issues:
+    # https://github.com/python/mypy/issues/8715
+    # https://github.com/python/mypy/issues/10068
+    from builtins import dict as _CustomDict
+    from builtins import list as _CustomList
+
+    # Allow type annotations but break circular imports
     from . import container
+else:
+    from collections.abc import MutableMapping, MutableSequence
+
+    class _CustomList(MutableSequence, list):
+        """Adds MutableSequence mixin while pretending to be a builtin list"""
+
+    class _CustomDict(MutableMapping, dict):
+        """Adds MutableMapping mixin while pretending to be a builtin dict"""
 
 
 def item(value, _parent=None, _sort_keys=False):
@@ -792,7 +814,7 @@ class Time(Item, time):
         )
 
 
-class Array(Item, MutableSequence, list):
+class Array(Item, _CustomList):
     """
     An array literal
     """
@@ -1006,7 +1028,7 @@ class Array(Item, MutableSequence, list):
         return self._value, self._trivia
 
 
-class Table(Item, MutableMapping, dict):
+class Table(Item, _CustomDict):
     """
     A table literal.
     """
@@ -1197,7 +1219,7 @@ class Table(Item, MutableMapping, dict):
         )
 
 
-class InlineTable(Item, MutableMapping, dict):
+class InlineTable(Item, _CustomDict):
     """
     An inline table literal.
     """
