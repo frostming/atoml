@@ -12,7 +12,9 @@ from typing import (
     Iterator,
     List,
     Optional,
+    TypeVar,
     Union,
+    cast,
     overload,
 )
 
@@ -1009,7 +1011,7 @@ class Array(Item, _CustomList):
 
         indexes = set()
         if isinstance(key, slice):
-            for idx in range(key.start or 0, key.end or length, key.step or 1):
+            for idx in range(key.start or 0, key.stop or length, key.step or 1):
                 indexes.update(get_indice_to_remove(idx))
         else:
             indexes.update(get_indice_to_remove(length + key if key < 0 else key))
@@ -1028,7 +1030,114 @@ class Array(Item, _CustomList):
         return self._value, self._trivia
 
 
-class Table(Item, _CustomDict):
+AT = TypeVar("AT", bound="AbstractTable")
+
+
+class AbstractTable(Item, _CustomDict):
+    """Common behaviour of both :class:`Table` and :class:`InlineTable`"""
+
+    def __init__(self, value: "container.Container", trivia: Trivia):
+        Item.__init__(self, trivia)
+
+        self._value = value
+
+        for k, v in self._value.body:
+            if k is not None:
+                dict.__setitem__(self, k.key, v)
+
+    @property
+    def value(self) -> "container.Container":
+        return self._value
+
+    @overload
+    def append(self: AT, key: None, value: Union[Comment, Whitespace]) -> AT:
+        ...
+
+    @overload
+    def append(self: AT, key: Union[Key, str], value: Any) -> AT:
+        ...
+
+    def append(self, key, value):
+        raise NotImplementedError
+
+    @overload
+    def add(self: AT, value: Union[Comment, Whitespace]) -> AT:
+        ...
+
+    @overload
+    def add(self: AT, key: Union[Key, str], value: Any) -> AT:
+        ...
+
+    def add(self, key, value=None):
+        if value is None:
+            if not isinstance(key, (Comment, Whitespace)):
+                msg = "Non comment/whitespace items must have an associated key"
+                raise ValueError(msg)
+
+            key, value = None, key
+
+        return self.append(key, value)
+
+    def remove(self: AT, key: Union[Key, str]) -> AT:
+        self._value.remove(key)
+
+        if isinstance(key, Key):
+            key = key.key
+
+        if key is not None:
+            dict.__delitem__(self, key)
+
+        return self
+
+    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
+        super().setdefault(key, default)
+        return self[key]
+
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return repr(self.value)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._value)
+
+    def __len__(self) -> int:
+        return len(self._value)
+
+    def __delitem__(self, key: Union[Key, str]) -> None:
+        self.remove(key)
+
+    def __getitem__(self, key: Union[Key, str]) -> Item:
+        return cast(Item, self._value[key])
+
+    def __setitem__(self, key: Union[Key, str], value: Any) -> None:
+        if not isinstance(value, Item):
+            value = item(value)
+
+        is_replace = key in self
+        self._value[key] = value
+
+        if key is not None:
+            dict.__setitem__(self, key, value)
+
+        if is_replace:
+            return
+        m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
+        if not m:
+            return
+
+        indent = m.group(1)
+
+        if not isinstance(value, Whitespace):
+            m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
+            if not m:
+                value.trivia.indent = indent
+            else:
+                value.trivia.indent = m.group(1) + indent + m.group(2)
+
+
+class Table(AbstractTable):
     """
     A table literal.
     """
@@ -1042,38 +1151,18 @@ class Table(Item, _CustomDict):
         name: Optional[str] = None,
         display_name: Optional[str] = None,
     ) -> None:
-        super().__init__(trivia)
+        super().__init__(value, trivia)
 
         self.name = name
         self.display_name = display_name
-        self._value = value
         self._is_aot_element = is_aot_element
         self._is_super_table = is_super_table
-
-        for k, v in self._value.body:
-            if k is not None:
-                dict.__setitem__(self, k.key, v)
-
-    @property
-    def value(self) -> "container.Container":
-        return self._value
 
     @property
     def discriminant(self) -> int:
         return 9
 
-    def add(self, key: Union[Key, Item, str], item: Any = None) -> Item:
-        if item is None:
-            if not isinstance(key, (Comment, Whitespace)):
-                raise ValueError(
-                    "Non comment/whitespace items must have an associated key"
-                )
-
-            key, item = None, key
-
-        return self.append(key, item)
-
-    def append(self, key: Union[Key, str], _item: Any) -> "Table":
+    def append(self, key, _item):
         """
         Appends a (key, item) to the table.
         """
@@ -1117,17 +1206,6 @@ class Table(Item, _CustomDict):
 
         return self
 
-    def remove(self, key: Union[Key, str]) -> "Table":
-        self._value.remove(key)
-
-        if isinstance(key, Key):
-            key = key.key
-
-        if key is not None:
-            dict.__delitem__(self, key)
-
-        return self
-
     def is_aot_element(self) -> bool:
         return self._is_aot_element
 
@@ -1144,13 +1222,13 @@ class Table(Item, _CustomDict):
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
         if not m:
-            indent = ""
+            indent_str = ""
         else:
-            indent = m.group(1)
+            indent_str = m.group(1)
 
         for _, item in self._value.body:
             if not isinstance(item, Whitespace):
-                item.trivia.indent = indent + item.trivia.indent
+                item.trivia.indent = indent_str + item.trivia.indent
 
         return self
 
@@ -1160,53 +1238,6 @@ class Table(Item, _CustomDict):
         for child in self.values():
             if hasattr(child, "invalidate_display_name"):
                 child.invalidate_display_name()
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._value)
-
-    def __len__(self) -> int:
-        return len(self._value)
-
-    def __getitem__(self, key: Union[Key, str]) -> Item:
-        return self._value[key]
-
-    def __setitem__(self, key: Union[Key, str], value: Any) -> None:
-        if not isinstance(value, Item):
-            value = item(value)
-
-        is_replace = key in self
-        self._value[key] = value
-
-        if key is not None:
-            dict.__setitem__(self, key, value)
-
-        if is_replace:
-            return
-        m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
-        if not m:
-            return
-
-        indent = m.group(1)
-
-        if not isinstance(value, Whitespace):
-            m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
-            if not m:
-                value.trivia.indent = indent
-            else:
-                value.trivia.indent = m.group(1) + indent + m.group(2)
-
-    def __delitem__(self, key: Union[Key, str]) -> None:
-        self.remove(key)
-
-    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
-        super().setdefault(key, default=default)
-        return self[key]
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self) -> str:
-        return repr(self.value)
 
     def _getstate(self, protocol: int = 3) -> tuple:
         return (
@@ -1219,7 +1250,7 @@ class Table(Item, _CustomDict):
         )
 
 
-class InlineTable(Item, _CustomDict):
+class InlineTable(AbstractTable):
     """
     An inline table literal.
     """
@@ -1227,24 +1258,15 @@ class InlineTable(Item, _CustomDict):
     def __init__(
         self, value: "container.Container", trivia: Trivia, new: bool = False
     ) -> None:
-        super().__init__(trivia)
+        super().__init__(value, trivia)
 
-        self._value = value
         self._new = new
-
-        for k, v in self._value.body:
-            if k is not None:
-                dict.__setitem__(self, k.key, v)
 
     @property
     def discriminant(self) -> int:
         return 10
 
-    @property
-    def value(self) -> dict:
-        return self._value
-
-    def append(self, key: Union[Key, str], _item: Any) -> "InlineTable":
+    def append(self, key, _item):
         """
         Appends a (key, item) to the table.
         """
@@ -1264,17 +1286,6 @@ class InlineTable(Item, _CustomDict):
 
         if key is not None:
             dict.__setitem__(self, key, _item)
-
-        return self
-
-    def remove(self, key: Union[Key, str]) -> "InlineTable":
-        self._value.remove(key)
-
-        if isinstance(key, Key):
-            key = key.key
-
-        if key is not None:
-            dict.__delitem__(self, key)
 
         return self
 
@@ -1310,48 +1321,10 @@ class InlineTable(Item, _CustomDict):
 
         return buf
 
-    def __getitem__(self, key: Union[Key, str]) -> Item:
-        return self._value[key]
-
     def __setitem__(self, key: Union[Key, str], value: Any) -> None:
-        if not isinstance(value, Item):
-            value = item(value)
-
-        self._value[key] = value
-
-        if key is not None:
-            dict.__setitem__(self, key, value)
-        if value.trivia.comment:
+        if hasattr(value, "trivia") and value.trivia.comment:
             value.trivia.comment = ""
-
-        m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
-        if not m:
-            return
-
-        indent = m.group(1)
-
-        if not isinstance(value, Whitespace):
-            m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
-            if not m:
-                value.trivia.indent = indent
-            else:
-                value.trivia.indent = m.group(1) + indent + m.group(2)
-
-    def __delitem__(self, key: Union[Key, str]) -> None:
-        self.remove(key)
-
-    def __len__(self) -> int:
-        return len(self._value)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._value)
-
-    def __repr__(self) -> str:
-        return repr(self.value)
-
-    def setdefault(self, key: Union[Key, str], default: Any) -> Any:
-        super().setdefault(key, default=default)
-        return self[key]
+        super().__setitem__(key, value)
 
     def _getstate(self, protocol: int = 3) -> tuple:
         return (self._value, self._trivia)
