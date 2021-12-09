@@ -537,6 +537,22 @@ bar = "baz"
         del doc["a"]["a"]["key"]
 
 
+def test_out_of_order_table_can_add_multiple_tables():
+    content = """\
+[a.a.b]
+x = 1
+[foo]
+bar = 1
+[a.a.c]
+y = 1
+[a.a.d]
+z = 1
+"""
+    doc = parse(content)
+    assert doc.as_string() == content
+    assert doc["a"]["a"] == {"b": {"x": 1}, "c": {"y": 1}, "d": {"z": 1}}
+
+
 def test_out_of_order_tables_are_still_dicts():
     content = """
 [a.a]

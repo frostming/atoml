@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Bugfixes
+
+- Fix a bug that `OutOfTableProxy` causes the embeded element to be updated. [#43](https://github.com/frostming/atoml/issues/43)
+
 ## v1.1.0(2021/11/1)
 
 ### Features

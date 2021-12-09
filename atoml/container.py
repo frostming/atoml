@@ -148,8 +148,15 @@ class Container(_CustomDict):
 
                             return self
 
+                        # Create a new element to replace the old one
+                        current = copy.deepcopy(current)
                         for k, v in item.value.body:
                             current.append(k, v)
+                        self._body[
+                            current_idx[-1]
+                            if isinstance(current_idx, tuple)
+                            else current_idx
+                        ] = (current_body_element[0], current)
 
                         return self
                     elif current_body_element[0].is_dotted():
@@ -680,7 +687,6 @@ class OutOfOrderTableProxy(_CustomDict):
         self._internal_container = Container(True)
         self._tables = []
         self._tables_map = {}
-        self._map = {}
 
         for i in indices:
             key, item = self._container._body[i]
@@ -693,11 +699,6 @@ class OutOfOrderTableProxy(_CustomDict):
                     self._tables_map[k] = table_idx
                     if k is not None:
                         dict.__setitem__(self, k.key, v)
-            else:
-                self._internal_container.append(key, item)
-                self._map[key] = i
-                if key is not None:
-                    dict.__setitem__(self, key.key, item)
 
     @property
     def value(self):
@@ -710,10 +711,7 @@ class OutOfOrderTableProxy(_CustomDict):
         return self._internal_container[key]
 
     def __setitem__(self, key: Union[Key, str], item: Any) -> None:
-        if key in self._map:
-            idx = self._map[key]
-            self._container._replace_at(idx, key, item)
-        elif key in self._tables_map:
+        if key in self._tables_map:
             table = self._tables[self._tables_map[key]]
             table[key] = item
         elif self._tables:
@@ -727,10 +725,7 @@ class OutOfOrderTableProxy(_CustomDict):
             dict.__setitem__(self, key, item)
 
     def __delitem__(self, key: Union[Key, str]) -> None:
-        if key in self._map:
-            del self._container[key]
-            del self._map[key]
-        elif key in self._tables_map:
+        if key in self._tables_map:
             table = self._tables[self._tables_map[key]]
             del table[key]
             del self._tables_map[key]
