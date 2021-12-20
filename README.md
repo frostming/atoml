@@ -1,6 +1,9 @@
+**UNMAINTAINED: _This project has been merged back to [tomlkit] and is no longer maintained. Please switch to [tomlkit>=0.8.0][tomlkit]._**
+
 [pypi_version]: https://img.shields.io/pypi/v/atoml.svg?logo=python&logoColor=white
 [python_versions]: https://img.shields.io/pypi/pyversions/atoml.svg?logo=python&logoColor=white
 [github_license]: https://img.shields.io/github/license/frostming/atoml.svg?logo=github&logoColor=white
+[tomlkit]: https://github.com/sdispater/tomlkit
 
 [![PyPI Version][pypi_version]](https://pypi.python.org/pypi/atoml/)
 [![Python Versions][python_versions]](https://pypi.python.org/pypi/atoml/)
@@ -18,7 +21,7 @@ You can also create new TOML documents from scratch using the provided helpers.
 
 The name comes from the famous Japanese cartoon character **鉄腕アトム(Atom)**.
 
-_**Implementation Change**: Start from 1.0, ATOML is a fork of [tomlkit v0.7.0](https://github.com/sdispater/tomlkit) with less bugs and inconsistency._
+_**Implementation Change**: Start from 1.0, ATOML is a fork of [tomlkit v0.7.0][tomlkit] with less bugs and inconsistency._
 
 ## Usage
 
@@ -144,7 +147,6 @@ It can be created with the following code:
 
 >>> doc["database"] = database
 ```
-
 
 ## Installation
 
