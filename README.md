@@ -1,4 +1,4 @@
-**UNMAINTAINED: _This project has been merged back to [tomlkit] and is no longer maintained. Please switch to [tomlkit>=0.8.0][tomlkit]._**
+**UNMAINTAINED: _This project has been merged back to [tomlkit] and is no longer maintained. Please switch to `tomlkit>=0.8.0`._**
 
 [pypi_version]: https://img.shields.io/pypi/v/atoml.svg?logo=python&logoColor=white
 [python_versions]: https://img.shields.io/pypi/pyversions/atoml.svg?logo=python&logoColor=white
